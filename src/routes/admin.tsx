@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState, FormEvent } from "react";
-import { Boxes, IndianRupee, MapPin, PackageCheck, ShoppingBag, User, Users, Star, Loader2, Upload, Trash2, FileText, CheckCircle2 } from "lucide-react";
+import { Boxes, IndianRupee, MapPin, PackageCheck, ShoppingBag, User, Users, Star, Loader2, Upload, Trash2, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { formatMoney, categories } from "@/data/shop";
 import { supabase } from "@/lib/supabase";
 import { resolveProductImage } from "@/lib/utils";
@@ -54,6 +54,50 @@ function AdminConsole() {
   // Form states
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
+
+  const handleStartEdit = (product: any) => {
+    setEditMode(true);
+    setEditProductId(product.id);
+    setShowAddForm(true);
+
+    setProdId(product.id);
+    setName(product.name);
+    setSlug(product.slug);
+    setDescription(product.description || "");
+    setCategory(product.category);
+    setPrice(String(product.price));
+    setSalePrice(product.sale_price ? String(product.sale_price) : "");
+    setStockQuantity(String(product.stock_quantity));
+    setFeatured(!!product.featured);
+    setWeight(product.weight || "");
+    setIngredientsText(product.ingredients ? product.ingredients.join(", ") : "");
+    setVariantsText(product.variants ? product.variants.join(", ") : "");
+    setImageFile(null);
+    setImagePreviewUrl(resolveProductImage(product.images[0]));
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditProductId(null);
+    setShowAddForm(false);
+
+    setProdId("");
+    setName("");
+    setSlug("");
+    setDescription("");
+    setCategory("Dark");
+    setPrice("");
+    setSalePrice("");
+    setStockQuantity("");
+    setFeatured(false);
+    setWeight("");
+    setIngredientsText("");
+    setVariantsText("");
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
 
   // New Product Fields
   const [prodId, setProdId] = useState("");
@@ -125,7 +169,7 @@ function AdminConsole() {
 
   // Sync slug with name when typing
   useEffect(() => {
-    if (!showAddForm) return;
+    if (!showAddForm || editMode) return;
     const generatedSlug = name
       .toLowerCase()
       .trim()
@@ -134,7 +178,7 @@ function AdminConsole() {
       .replace(/^-+|-+$/g, "");
     setSlug(generatedSlug);
     setProdId(`cc-${generatedSlug.substring(0, 15)}`);
-  }, [name, showAddForm]);
+  }, [name, showAddForm, editMode]);
 
   const handleFileChange = (e: any) => {
     const file = e.target.files?.[0];
@@ -187,11 +231,10 @@ function AdminConsole() {
       if (finalStock === 0) status = "sold-out";
       else if (finalStock < 10) status = "low-stock";
 
-      // 3. Save to database
-      const { data: newProd, error: dbErr } = await supabase
-        .from("products")
-        .insert({
-          id: prodId || `cc-${Date.now()}`,
+      // 3. Save or Update in database
+      let newProd;
+      if (editMode && editProductId) {
+        const updateData: any = {
           name,
           slug,
           description,
@@ -200,39 +243,58 @@ function AdminConsole() {
           sale_price: finalSalePrice,
           stock_quantity: finalStock,
           featured,
-          images: [imageUrl],
-          ingredients,
           weight,
           status,
           variants,
-        })
-        .select()
-        .single();
+          ingredients,
+        };
 
-      if (dbErr) throw dbErr;
+        if (imageFile) {
+          updateData.images = [imageUrl];
+        }
 
-      // Update state catalog list
-      setProducts((prev) => [newProd, ...prev]);
-      alert("Product added successfully!");
+        const { data, error: dbErr } = await supabase
+          .from("products")
+          .update(updateData)
+          .eq("id", editProductId)
+          .select()
+          .single();
 
-      // Reset form
-      setName("");
-      setSlug("");
-      setProdId("");
-      setDescription("");
-      setCategory("Dark");
-      setPrice("");
-      setSalePrice("");
-      setStockQuantity("");
-      setFeatured(false);
-      setWeight("");
-      setIngredientsText("");
-      setVariantsText("");
-      setImageFile(null);
-      setImagePreviewUrl("");
-      setShowAddForm(false);
+        if (dbErr) throw dbErr;
+        newProd = data;
+        setProducts((prev) => prev.map((p) => p.id === editProductId ? newProd : p));
+        alert("Product updated successfully!");
+      } else {
+        const { data, error: dbErr } = await supabase
+          .from("products")
+          .insert({
+            id: prodId || `cc-${Date.now()}`,
+            name,
+            slug,
+            description,
+            category,
+            price: finalPrice,
+            sale_price: finalSalePrice,
+            stock_quantity: finalStock,
+            featured,
+            images: [imageUrl],
+            ingredients,
+            weight,
+            status,
+            variants,
+          })
+          .select()
+          .single();
+
+        if (dbErr) throw dbErr;
+        newProd = data;
+        setProducts((prev) => [newProd, ...prev]);
+        alert("Product added successfully!");
+      }
+
+      handleCancelEdit();
     } catch (err: any) {
-      alert(`Add product failed: ${err.message}`);
+      alert(`Operation failed: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -373,6 +435,13 @@ function AdminConsole() {
                           {product.status}
                         </span>
                         <button
+                          onClick={() => handleStartEdit(product)}
+                          className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary text-muted-foreground transition-all"
+                          title="Edit SKU"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteProduct(product.id)}
                           className="grid h-8 w-8 place-items-center rounded-full hover:bg-destructive/15 text-destructive transition-all"
                           title="Delete SKU"
@@ -390,17 +459,20 @@ function AdminConsole() {
             <aside>
               {showAddForm ? (
                 <div className="rounded-3xl bg-card p-6 shadow-luxe border border-border/50 space-y-4">
-                  <h3 className="font-display text-2xl border-b border-border pb-3 mb-2">New Chocolate SKU</h3>
+                  <h3 className="font-display text-2xl border-b border-border pb-3 mb-2">
+                    {editMode ? "Edit Chocolate SKU" : "New Chocolate SKU"}
+                  </h3>
                   
                   <form onSubmit={handleAddProduct} className="space-y-4">
                     <label className="block">
                       <span className="text-[10px] uppercase tracking-[0.15em] text-accent">Product ID</span>
                       <input
                         required
+                        disabled={editMode}
                         value={prodId}
                         onChange={(e) => setProdId(e.target.value)}
                         placeholder="cc-hazelnut-truffle"
-                        className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm focus:outline-none"
+                        className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm focus:outline-none disabled:opacity-50"
                       />
                     </label>
 
@@ -550,11 +622,11 @@ function AdminConsole() {
                         disabled={isSubmitting}
                         className="flex-1 rounded-full bg-primary py-2.5 text-xs text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50"
                       >
-                        {isSubmitting ? "Saving..." : "Save product"}
+                        {isSubmitting ? "Saving..." : editMode ? "Save changes" : "Save product"}
                       </button>
                       <button
                         type="button"
-                        onClick={() => setShowAddForm(false)}
+                        onClick={handleCancelEdit}
                         className="rounded-full border border-border px-5 py-2.5 text-xs font-medium hover:bg-secondary"
                       >
                         Cancel

@@ -12,7 +12,11 @@ begin
 end
 $$;
 
--- 1. PRODUCTS TABLE
+-- =========================================================================
+-- 1. TABLE DEFINITIONS
+-- =========================================================================
+
+-- Products Table
 create table if not exists public.products (
   id text primary key,
   name text not null,
@@ -34,107 +38,16 @@ create table if not exists public.products (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Products
-alter table public.products enable row level security;
-
--- Products RLS Policies
-create policy "Allow public read access to products"
-  on public.products for select
-  using (true);
-
-create policy "Allow admins to insert products"
-  on public.products for insert
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
-
-create policy "Allow admins to update products"
-  on public.products for update
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
-
-create policy "Allow admins to delete products"
-  on public.products for delete
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
-
--- 2. PROFILES TABLE (linked to auth.users)
+-- Profiles Table (linked to auth.users)
 create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
   full_name text,
   phone text,
-  role user_role not null default 'customer',
+  role public.user_role not null default 'customer',
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Profiles
-alter table public.profiles enable row level security;
-
--- Profiles RLS Policies
-create policy "Allow users to read their own profile"
-  on public.profiles for select
-  to authenticated
-  using (auth.uid() = id);
-
-create policy "Allow admins to read all profiles"
-  on public.profiles for select
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
-
-create policy "Allow users to update their own profile"
-  on public.profiles for update
-  to authenticated
-  using (auth.uid() = id);
-
--- Automatic handle_new_user trigger on auth.users insert
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, full_name, phone, role)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'phone',
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'customer')
-  )
-  on conflict (id) do update
-  set
-    full_name = excluded.full_name,
-    phone = excluded.phone,
-    role = excluded.role;
-  return new;
-end;
-$$ language plpgsql security definer;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
--- 3. ADDRESSES TABLE
+-- Addresses Table
 create table if not exists public.addresses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users on delete cascade not null,
@@ -148,16 +61,7 @@ create table if not exists public.addresses (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Addresses
-alter table public.addresses enable row level security;
-
--- Addresses RLS Policies
-create policy "Allow users to manage their own addresses"
-  on public.addresses for all
-  to authenticated
-  using (auth.uid() = user_id);
-
--- 4. CART ITEMS TABLE
+-- Cart Items Table
 create table if not exists public.cart_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users on delete cascade not null,
@@ -167,16 +71,7 @@ create table if not exists public.cart_items (
   unique(user_id, product_id)
 );
 
--- Enable RLS for Cart Items
-alter table public.cart_items enable row level security;
-
--- Cart Items RLS Policies
-create policy "Allow users to manage their own cart items"
-  on public.cart_items for all
-  to authenticated
-  using (auth.uid() = user_id);
-
--- 5. ORDERS TABLE
+-- Orders Table
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users on delete set null,
@@ -195,35 +90,7 @@ create table if not exists public.orders (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Orders
-alter table public.orders enable row level security;
-
--- Orders RLS Policies
-create policy "Allow users to read their own orders"
-  on public.orders for select
-  to authenticated
-  using (auth.uid() = user_id);
-
-create policy "Allow admins to read/write all orders"
-  on public.orders for all
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
-
-create policy "Allow public/guests to create orders"
-  on public.orders for insert
-  using (true);
-
-create policy "Allow public/guests to update their own pending orders"
-  on public.orders for update
-  using (payment_status = 'pending');
-
--- 6. ORDER ITEMS TABLE
+-- Order Items Table
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references public.orders(id) on delete cascade not null,
@@ -232,10 +99,164 @@ create table if not exists public.order_items (
   price numeric not null
 );
 
--- Enable RLS for Order Items
-alter table public.order_items enable row level security;
+-- Feedbacks Table
+create table if not exists public.feedbacks (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  email text,
+  rating integer check (rating >= 1 and rating <= 5),
+  message text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- Order Items RLS Policies
+-- =========================================================================
+-- 2. TRIGGERS & FUNCTIONS
+-- =========================================================================
+
+-- Check if user is admin (security definer bypasses RLS to prevent recursion)
+create or replace function public.is_admin(user_id uuid)
+returns boolean as $$
+begin
+  return exists (
+    select 1 from public.profiles
+    where id = user_id and role = 'admin'
+  );
+end;
+$$ language plpgsql security definer;
+
+-- Automatic handle_new_user trigger on auth.users insert
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  default_role public.user_role := 'customer';
+  meta_role text;
+begin
+  if new.raw_user_meta_data is not null then
+    meta_role := new.raw_user_meta_data->>'role';
+    if meta_role = 'admin' then
+      default_role := 'admin';
+    end if;
+  end if;
+
+  insert into public.profiles (id, full_name, phone, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    coalesce(new.raw_user_meta_data->>'phone', ''),
+    default_role
+  )
+  on conflict (id) do update
+  set
+    full_name = excluded.full_name,
+    phone = excluded.phone,
+    role = excluded.role;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- =========================================================================
+-- 3. ENABLE ROW LEVEL SECURITY
+-- =========================================================================
+
+alter table public.products enable row level security;
+alter table public.profiles enable row level security;
+alter table public.addresses enable row level security;
+alter table public.cart_items enable row level security;
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.feedbacks enable row level security;
+
+-- =========================================================================
+-- 4. RLS POLICY DEFINITIONS
+-- =========================================================================
+
+-- Products Policies
+drop policy if exists "Allow public read access to products" on public.products;
+create policy "Allow public read access to products"
+  on public.products for select
+  using (true);
+
+drop policy if exists "Allow admins to insert products" on public.products;
+create policy "Allow admins to insert products"
+  on public.products for insert
+  to authenticated
+  with check (public.is_admin(auth.uid()));
+
+drop policy if exists "Allow admins to update products" on public.products;
+create policy "Allow admins to update products"
+  on public.products for update
+  to authenticated
+  using (public.is_admin(auth.uid()));
+
+drop policy if exists "Allow admins to delete products" on public.products;
+create policy "Allow admins to delete products"
+  on public.products for delete
+  to authenticated
+  using (public.is_admin(auth.uid()));
+
+-- Profiles Policies
+drop policy if exists "Allow users to read their own profile" on public.profiles;
+create policy "Allow users to read their own profile"
+  on public.profiles for select
+  to authenticated
+  using (auth.uid() = id);
+
+drop policy if exists "Allow admins to read all profiles" on public.profiles;
+create policy "Allow admins to read all profiles"
+  on public.profiles for select
+  to authenticated
+  using (public.is_admin(auth.uid()));
+
+drop policy if exists "Allow users to update their own profile" on public.profiles;
+create policy "Allow users to update their own profile"
+  on public.profiles for update
+  to authenticated
+  using (auth.uid() = id);
+
+-- Addresses Policies
+drop policy if exists "Allow users to manage their own addresses" on public.addresses;
+create policy "Allow users to manage their own addresses"
+  on public.addresses for all
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- Cart Items Policies
+drop policy if exists "Allow users to manage their own cart items" on public.cart_items;
+create policy "Allow users to manage their own cart items"
+  on public.cart_items for all
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- Orders Policies
+drop policy if exists "Allow users to read their own orders" on public.orders;
+create policy "Allow users to read their own orders"
+  on public.orders for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Allow admins to read/write all orders" on public.orders;
+create policy "Allow admins to read/write all orders"
+  on public.orders for all
+  to authenticated
+  using (public.is_admin(auth.uid()));
+
+drop policy if exists "Allow public/guests to create orders" on public.orders;
+create policy "Allow public/guests to create orders"
+  on public.orders for insert
+  with check (true);
+
+drop policy if exists "Allow public/guests to update their own pending orders" on public.orders;
+create policy "Allow public/guests to update their own pending orders"
+  on public.orders for update
+  using (payment_status = 'pending');
+
+-- Order Items Policies
+drop policy if exists "Allow users to read their own order items" on public.order_items;
 create policy "Allow users to read their own order items"
   on public.order_items for select
   to authenticated
@@ -247,52 +268,33 @@ create policy "Allow users to read their own order items"
     )
   );
 
+drop policy if exists "Allow admins to manage all order items" on public.order_items;
 create policy "Allow admins to manage all order items"
   on public.order_items for all
   to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
+  using (public.is_admin(auth.uid()));
 
+drop policy if exists "Allow public/guests to create order items" on public.order_items;
 create policy "Allow public/guests to create order items"
   on public.order_items for insert
-  using (true);
+  with check (true);
 
--- 7. FEEDBACKS TABLE
-create table if not exists public.feedbacks (
-  id uuid primary key default gen_random_uuid(),
-  name text,
-  email text,
-  rating integer check (rating >= 1 and rating <= 5),
-  message text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- Enable RLS for Feedbacks
-alter table public.feedbacks enable row level security;
-
--- Feedbacks RLS Policies
+-- Feedbacks Policies
+drop policy if exists "Allow public to insert feedback" on public.feedbacks;
 create policy "Allow public to insert feedback"
   on public.feedbacks for insert
-  using (true);
+  with check (true);
 
+drop policy if exists "Allow admins to manage feedback" on public.feedbacks;
 create policy "Allow admins to manage feedback"
   on public.feedbacks for all
   to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where public.profiles.id = auth.uid()
-      and public.profiles.role = 'admin'
-    )
-  );
+  using (public.is_admin(auth.uid()));
 
+-- =========================================================================
+-- 5. SEED DATA FOR PRODUCTS
+-- =========================================================================
 
--- SEED DATA FOR PRODUCTS
 insert into public.products (id, name, slug, description, category, price, sale_price, stock_quantity, featured, images, ingredients, weight, rating, reviews, popularity, status, variants) values
 ('cc-dark-70', 'Single-Origin 70%', 'single-origin-70', 'Slow-roasted Idukki cocoa with a clean snap, deep fruit notes, and a long finish.', 'Dark', 420, null, 24, true, array['dark.jpg', 'nuts.jpg', 'gift.jpg'], array['Cocoa mass', 'Cocoa butter', 'Raw cane sugar', 'Cocoa nibs'], '100 g', 4.9, 86, 98, 'available', array['70% bar', '75% sea salt', 'Nib bark']),
 ('cc-milk-velvet', 'Velvet Milk', 'velvet-milk', 'Creamy Nilgiri milk chocolate with caramel warmth and a soft, silken melt.', 'Milk', 360, 320, 18, true, array['milk.jpg', 'homemade.jpg', 'gift.jpg'], array['Cocoa butter', 'Milk powder', 'Cocoa mass', 'Cane sugar'], '100 g', 4.8, 64, 91, 'available', array['Classic', 'Caramel', 'Hot chocolate cube']),
