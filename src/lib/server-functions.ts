@@ -1,0 +1,448 @@
+import { createServerFn } from "@tanstack/react-start";
+import { supabaseAdmin } from "./supabase";
+
+// Types
+export interface CheckoutItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface CustomerInfo {
+  email: string;
+  name: string;
+  phone: string;
+  userId?: string;
+}
+
+export interface ShippingAddress {
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
+
+// 1. ORDER INITIALIZATION
+export const createCheckoutOrder = createServerFn(
+  { method: "POST" },
+  async (payload: {
+    items: CheckoutItem[];
+    customerInfo: CustomerInfo;
+    shippingAddress: ShippingAddress;
+  }) => {
+    const { items, customerInfo, shippingAddress } = payload;
+
+    // Fetch actual prices from Supabase
+    const productIds = items.map((i) => i.productId);
+    const { data: dbProducts, error: fetchErr } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .in("id", productIds);
+
+    if (fetchErr || !dbProducts) {
+      throw new Error(`Failed to retrieve product data: ${fetchErr?.message || "Unknown error"}`);
+    }
+
+    // Securely calculate checkout subtotal
+    let subtotal = 0;
+    for (const item of items) {
+      const prod = dbProducts.find((p) => p.id === item.productId);
+      if (!prod) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+      if (prod.stock_quantity < item.quantity) {
+        throw new Error(`Insufficient stock for product ${prod.name}. Available: ${prod.stock_quantity}`);
+      }
+      const price = prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price);
+      subtotal += price * item.quantity;
+    }
+
+    const shippingFee = subtotal > 1500 || subtotal === 0 ? 0 : 120;
+    const tax = Math.round(subtotal * 0.05);
+    const total = subtotal + shippingFee + tax;
+
+    const keyId = process.env.VITE_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    let razorpayOrderId = "";
+    let isMock = false;
+
+    if (!keyId || !keySecret) {
+      console.warn("Razorpay API credentials missing. Initiating MOCK payment order.");
+      razorpayOrderId = `rp_mock_${Math.random().toString(36).substring(2, 15)}`;
+      isMock = true;
+    } else {
+      try {
+        const RazorpayClass = (await import("razorpay")).default;
+        const razorpay = new RazorpayClass({
+          key_id: keyId,
+          key_secret: keySecret,
+        });
+
+        const rpOrder = await razorpay.orders.create({
+          amount: total * 100, // amount in paise
+          currency: "INR",
+          receipt: `rcpt_${Date.now()}`,
+        });
+
+        razorpayOrderId = rpOrder.id;
+      } catch (err: any) {
+        console.error("Razorpay order creation failed:", err);
+        throw new Error(`Razorpay initialization failed: ${err.message}`);
+      }
+    }
+
+    // Write pending order details to database
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        user_id: customerInfo.userId || null,
+        guest_email: customerInfo.userId ? null : customerInfo.email,
+        guest_name: customerInfo.userId ? null : customerInfo.name,
+        guest_phone: customerInfo.userId ? null : customerInfo.phone,
+        shipping_address: shippingAddress,
+        subtotal,
+        shipping_fee: shippingFee,
+        tax,
+        total,
+        payment_status: "pending",
+        razorpay_order_id: razorpayOrderId,
+        fulfillment_status: "pending",
+      })
+      .select()
+      .single();
+
+    if (orderErr || !order) {
+      throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"}`);
+    }
+
+    // Write order items
+    const orderItemsToInsert = items.map((item) => {
+      const prod = dbProducts.find((p) => p.id === item.productId);
+      return {
+        order_id: order.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        price: prod ? (prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price)) : 0,
+      };
+    });
+
+    const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(orderItemsToInsert);
+    if (itemsErr) {
+      throw new Error(`Failed to record order items: ${itemsErr.message}`);
+    }
+
+    return {
+      success: true,
+      orderId: order.id,
+      razorpayOrderId,
+      amount: total * 100,
+      isMock,
+    };
+  }
+);
+
+// 2. PAYMENT SIGNATURE VERIFICATION
+export const verifyCheckoutPayment = createServerFn(
+  { method: "POST" },
+  async (payload: {
+    orderId: string;
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+    isMock: boolean;
+  }) => {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature, isMock } = payload;
+
+    // Verify signature
+    if (!isMock) {
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keySecret) {
+        throw new Error("Razorpay secret role key missing on server.");
+      }
+
+      const crypto = await import("crypto");
+      const generatedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest("hex");
+
+      if (generatedSignature !== razorpaySignature) {
+        throw new Error("Invalid signature verification failed.");
+      }
+    }
+
+    // Mark order as paid
+    const { data: order, error: updateErr } = await supabaseAdmin
+      .from("orders")
+      .update({
+        payment_status: "paid",
+        razorpay_payment_id: razorpayPaymentId,
+      })
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (updateErr || !order) {
+      throw new Error(`Failed to update order payment status: ${updateErr?.message || "Order not found"}`);
+    }
+
+    // Fetch order items to deplete stock levels
+    const { data: orderItems, error: itemsErr } = await supabaseAdmin
+      .from("order_items")
+      .select("*, products(*)")
+      .eq("order_id", orderId);
+
+    if (itemsErr || !orderItems) {
+      console.error(`Failed to fetch order items for stock updates: ${itemsErr?.message}`);
+    } else {
+      // Deplete inventory levels
+      for (const item of orderItems) {
+        const prod = item.products;
+        if (!prod) continue;
+
+        const newStock = Math.max(0, prod.stock_quantity - item.quantity);
+        let newStatus = "available";
+        if (newStock === 0) {
+          newStatus = "sold-out";
+        } else if (newStock < 10) {
+          newStatus = "low-stock";
+        }
+
+        const { error: stockErr } = await supabaseAdmin
+          .from("products")
+          .update({
+            stock_quantity: newStock,
+            status: newStatus,
+          })
+          .eq("id", prod.id);
+
+        if (stockErr) {
+          console.error(`Failed to update inventory level for product ${prod.id}: ${stockErr.message}`);
+        }
+      }
+    }
+
+    const customerEmail = order.guest_email || "";
+    const customerName = order.guest_name || "Valued Customer";
+    const customerPhone = order.guest_phone || "";
+
+    // Load customer email details if logged in
+    let emailToUse = customerEmail;
+    let nameToUse = customerName;
+    if (order.user_id) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", order.user_id)
+        .single();
+      
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(order.user_id);
+      
+      if (userData?.user?.email) {
+        emailToUse = userData.user.email;
+      }
+      if (profile?.full_name) {
+        nameToUse = profile.full_name;
+      }
+    }
+
+    // A. Send confirmation email using Resend
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey && emailToUse) {
+      try {
+        const { Resend } = await import("resend");
+        const resendClient = new Resend(resendApiKey);
+
+        const itemsSummaryHtml = orderItems
+          ? orderItems
+              .map(
+                (item) =>
+                  `<tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.products?.name || "Artisan Chocolate"}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
+                  </tr>`
+              )
+              .join("")
+          : "";
+
+        await resendClient.emails.send({
+          from: "ETERNITY Boutique <onboarding@resend.dev>",
+          to: emailToUse,
+          subject: `Your ETERNITY Chocolate Order #${orderId.slice(0, 8).toUpperCase()} is Confirmed!`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #FAF6F0;">
+              <h2 style="color: #6D4C41; font-family: serif; border-bottom: 2px solid #8D6E63; padding-bottom: 10px;">ETERNITY</h2>
+              <p>Dear ${nameToUse},</p>
+              <p>Thank you for placing your order with ETERNITY. We are preparing your box of handcrafted chocolates from the misty hills of Ooty.</p>
+              
+              <h3 style="color: #8D6E63;">Order Summary</h3>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                  <tr style="background-color: #EFEBE9;">
+                    <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left;">Item</th>
+                    <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: center;">Quantity</th>
+                    <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: right;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsSummaryHtml}
+                </tbody>
+              </table>
+
+              <div style="margin-top: 15px; text-align: right; font-weight: bold; color: #5D4037;">
+                Subtotal: ₹${order.subtotal}<br/>
+                Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
+                GST (5%): ₹${order.tax}<br/>
+                <span style="font-size: 1.2em;">Total: ₹${order.total}</span>
+              </div>
+
+              <div style="margin-top: 25px; font-size: 0.85em; color: #8D6E63; text-align: center; border-top: 1px solid #ddd; padding-top: 15px;">
+                <strong>ETERNITY Artisan Chocolate Boutique</strong><br/>
+                No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001
+              </div>
+            </div>
+          `,
+        });
+      } catch (emailErr) {
+        console.error("Resend email delivery failed:", emailErr);
+      }
+    }
+
+    // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
+    const waToken = process.env.META_WHATSAPP_TOKEN;
+    const waPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
+    const ownerPhone = process.env.OWNER_WHATSAPP_NUMBER;
+
+    if (waToken && waPhoneId) {
+      const baseWhatsAppUrl = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
+      
+      // Alert Owner
+      if (ownerPhone) {
+        try {
+          await fetch(baseWhatsAppUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${waToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: ownerPhone,
+              type: "template",
+              template: {
+                name: "order_alert_owner", // template name
+                language: { code: "en_US" },
+                components: [
+                  {
+                    type: "body",
+                    parameters: [
+                      { type: "text", text: orderId.slice(0, 8).toUpperCase() },
+                      { type: "text", text: String(order.total) },
+                      { type: "text", text: nameToUse },
+                    ],
+                  },
+                ],
+              },
+            }),
+          });
+        } catch (waErr) {
+          console.error("WhatsApp owner notification failed:", waErr);
+        }
+      }
+
+      // Alert Customer
+      if (customerPhone) {
+        try {
+          await fetch(baseWhatsAppUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${waToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: customerPhone,
+              type: "template",
+              template: {
+                name: "order_confirmation_customer", // template name
+                language: { code: "en_US" },
+                components: [
+                  {
+                    type: "body",
+                    parameters: [
+                      { type: "text", text: nameToUse },
+                      { type: "text", text: orderId.slice(0, 8).toUpperCase() },
+                      { type: "text", text: String(order.total) },
+                    ],
+                  },
+                ],
+              },
+            }),
+          });
+        } catch (waErr) {
+          console.error("WhatsApp customer notification failed:", waErr);
+        }
+      }
+    }
+
+    return { success: true };
+  }
+);
+
+// 3. SUBMIT FEEDBACK
+export const submitFeedback = createServerFn(
+  { method: "POST" },
+  async (payload: { name: string; email: string; rating: number; message: string }) => {
+    const { name, email, rating, message } = payload;
+
+    // Record feedback in database
+    const { data: fb, error: insertErr } = await supabaseAdmin
+      .from("feedbacks")
+      .insert({ name, email, rating, message })
+      .select()
+      .single();
+
+    if (insertErr || !fb) {
+      throw new Error(`Failed to save feedback: ${insertErr?.message || "Unknown error"}`);
+    }
+
+    // Trigger Resend email notification to owner
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const ownerEmail = "hello@eternity.in"; // Owner email
+
+    if (resendApiKey) {
+      try {
+        const { Resend } = await import("resend");
+        const resendClient = new Resend(resendApiKey);
+
+        await resendClient.emails.send({
+          from: "ETERNITY Feedback System <onboarding@resend.dev>",
+          to: ownerEmail,
+          subject: `New Customer Feedback: ${rating} Stars from ${name}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #FFFDE7;">
+              <h2 style="color: #F57F17; font-family: serif; border-bottom: 2px solid #FBC02D; padding-bottom: 10px;">New Feedback Received</h2>
+              <p><strong>Customer Name:</strong> ${name}</p>
+              <p><strong>Customer Email:</strong> ${email}</p>
+              <p><strong>Rating:</strong> ${rating} / 5 Stars</p>
+              <p><strong>Message:</strong></p>
+              <blockquote style="background-color: #FFF9C4; padding: 15px; border-left: 5px solid #FBC02D; border-radius: 4px; font-style: italic;">
+                "${message}"
+              </blockquote>
+              <p style="margin-top: 25px; font-size: 0.8em; color: #757575;">
+                Submitted at: ${new Date(fb.created_at).toLocaleString()}
+              </p>
+            </div>
+          `,
+        });
+      } catch (emailErr) {
+        console.error("Resend feedback notification email delivery failed:", emailErr);
+      }
+    }
+
+    return { success: true };
+  }
+);
