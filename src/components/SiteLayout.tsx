@@ -39,10 +39,10 @@ function useScrolled(threshold = 30) {
 }
 
 function useDarkMode() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("ck-theme") : null;
-    const isDark = saved === "dark";
+    const isDark = saved === null ? true : saved === "dark";
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
@@ -76,7 +76,7 @@ function FloatingNav() {
           }`}
         >
           <Link to="/" className="flex items-center gap-2 group">
-            <img src={logoImg} alt="ETERNITY Logo" className="h-9 w-auto object-contain" />
+            <img src={logoImg} alt="ETERNITY Logo" className="h-9 w-auto object-contain theme-logo" />
             <span className="font-display text-lg md:text-xl tracking-wide">
               ETERNITY
             </span>
@@ -334,7 +334,7 @@ function Footer() {
       <div className="container mx-auto px-6 py-16 grid gap-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <Link to="/" className="flex items-center gap-3">
-            <img src={logoImg} alt="ETERNITY Logo" className="h-10 w-auto object-contain" />
+            <img src={logoImg} alt="ETERNITY Logo" className="h-10 w-auto object-contain theme-logo" />
             <span className="font-display text-2xl">ETERNITY</span>
           </Link>
           <p className="mt-5 max-w-md text-[oklch(0.94_0.02_80/0.7)] leading-relaxed">
