@@ -32,6 +32,37 @@ function Visit() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleFormSubmit = async () => {
+    console.log("Feedback form direct onClick triggered:", { name, email, rating, message });
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      alert("Please fill out all the fields (Name, Email, and Message).");
+      return;
+    }
+    if (!email.includes("@")) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await submitFeedback({
+        name,
+        email,
+        rating,
+        message,
+      });
+      console.log("Feedback API response:", res);
+      if (res.success) {
+        setSent(true);
+      }
+    } catch (err: any) {
+      console.error("Feedback submission error:", err);
+      alert(`Failed to submit feedback: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="pb-24">
       {/* HERO */}
@@ -108,29 +139,7 @@ function Visit() {
 
         {/* INQUIRY/FEEDBACK FORM */}
         <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            console.log("Feedback form onSubmit triggered:", { name, email, rating, message });
-            if (isSubmitting) return;
-            setIsSubmitting(true);
-            try {
-              const res = await submitFeedback({
-                name,
-                email,
-                rating,
-                message,
-              });
-              console.log("Feedback API response:", res);
-              if (res.success) {
-                setSent(true);
-              }
-            } catch (err: any) {
-              console.error("Feedback submission error:", err);
-              alert(`Failed to submit feedback: ${err.message}`);
-            } finally {
-              setIsSubmitting(false);
-            }
-          }}
+          onSubmit={(e) => e.preventDefault()}
           className="rounded-3xl bg-card p-8 md:p-10 shadow-luxe"
         >
           <h2 className="font-display text-3xl mb-2">Send a note.</h2>
@@ -232,7 +241,8 @@ function Visit() {
               </div>
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleFormSubmit}
                 disabled={isSubmitting}
                 className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground py-3.5 font-medium hover:opacity-90 transition-opacity shadow-soft disabled:opacity-50"
               >
