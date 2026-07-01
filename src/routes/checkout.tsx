@@ -7,7 +7,18 @@ import { resolveProductImage } from "@/lib/utils";
 import { createCheckoutOrder, verifyCheckoutPayment } from "@/lib/server-functions";
 import { supabase } from "@/lib/supabase";
 
+interface CheckoutSearch {
+  order_id?: string;
+  error?: string;
+}
+
 export const Route = createFileRoute("/checkout")({
+  validateSearch: (search: Record<string, unknown>): CheckoutSearch => {
+    return {
+      order_id: search.order_id as string | undefined,
+      error: search.error as string | undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Checkout — ETERNITY" },
@@ -58,6 +69,7 @@ function loadScript(src: string): Promise<boolean> {
 function Checkout() {
   const cart = useCart();
   const { user, profile } = useAuth();
+  const { order_id: queryOrderId, error: queryError } = Route.useSearch();
   
   const [placed, setPlaced] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -73,9 +85,38 @@ function Checkout() {
   const [stateField, setStateField] = useState("");
   const [pincode, setPincode] = useState("");
 
-  // Check hydration and load default user details
+  // Check hydration and load default user details / verify payment
   useEffect(() => {
     setIsClient(true);
+    
+    const verifyLivePayment = async () => {
+      if (queryOrderId) {
+        setIsProcessing(true);
+        try {
+          const verifyRes = await verifyCheckoutPayment({
+            cashfreeOrderId: queryOrderId,
+            isMock: false
+          });
+          if (verifyRes.success) {
+            await cart.clearCart();
+            setPlaced(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            alert("Payment verification failed. Please contact support.");
+          }
+        } catch (err: any) {
+          alert(`Payment verification error: ${err.message}`);
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    };
+
+    verifyLivePayment();
+
+    if (queryError) {
+      alert(`Payment failed: ${decodeURIComponent(queryError)}`);
+    }
     
     if (user) {
       if (user.email) setEmail(user.email);
@@ -144,7 +185,7 @@ function Checkout() {
         }
       });
 
-      const { orderId, razorpayOrderId, amount, isMock } = orderRes;
+      const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock } = orderRes;
 
       // 2. Handle Mock Checkout / Offline Sandbox Mode
       if (isMock) {
@@ -153,9 +194,8 @@ function Checkout() {
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({
           orderId,
-          razorpayOrderId,
-          razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
-          razorpaySignature: "sig_mock",
+          cashfreeOrderId,
+          cashfreePaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
           isMock: true
         });
 
@@ -167,64 +207,23 @@ function Checkout() {
           alert("Mock payment simulation failed. Please try again.");
         }
       } else {
-        // 3. Live Razorpay Modal Checkout
-        const sdkLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+        // 3. Live Cashfree Web Checkout SDK
+        const sdkLoaded = await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
         if (!sdkLoaded) {
-          alert("Could not load the Razorpay checkout script. Check your internet connection.");
+          alert("Could not load the Cashfree checkout script. Check your internet connection.");
           setIsProcessing(false);
           return;
         }
 
-        const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        const cashfreeEnv = import.meta.env.VITE_CASHFREE_ENV || "TEST";
+        const cashfree = new (window as any).Cashfree({
+          mode: cashfreeEnv === "PROD" ? "production" : "sandbox"
+        });
 
-        const options = {
-          key: keyId,
-          amount,
-          currency: "INR",
-          name: "ETERNITY",
-          description: "Artisan Chocolates Purchase",
-          order_id: razorpayOrderId,
-          handler: async function (response: any) {
-            try {
-              setIsProcessing(true);
-              const verifyRes = await verifyCheckoutPayment({
-                orderId,
-                razorpayOrderId,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-                isMock: false
-              });
-
-              if (verifyRes.success) {
-                await cart.clearCart();
-                setPlaced(true);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              } else {
-                alert("Payment verification failed. Please contact support.");
-              }
-            } catch (err: any) {
-              alert(`Payment verification error: ${err.message}`);
-            } finally {
-              setIsProcessing(false);
-            }
-          },
-          prefill: {
-            name: `${firstName} ${lastName}`,
-            email: email,
-            contact: phone
-          },
-          theme: {
-            color: "#8D6E63" // Brand gold/brown cocoa color
-          },
-          modal: {
-            ondismiss: function() {
-              setIsProcessing(false);
-            }
-          }
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
+        cashfree.checkout({
+          paymentSessionId: paymentSessionId,
+          redirectTarget: "_self"
+        });
       }
     } catch (err: any) {
       alert(`Checkout failed: ${err.message}`);

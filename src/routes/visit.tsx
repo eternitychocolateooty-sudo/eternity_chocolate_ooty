@@ -110,6 +110,7 @@ function Visit() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            console.log("Feedback form onSubmit triggered:", { name, email, rating, message });
             if (isSubmitting) return;
             setIsSubmitting(true);
             try {
@@ -119,10 +120,12 @@ function Visit() {
                 rating,
                 message,
               });
+              console.log("Feedback API response:", res);
               if (res.success) {
                 setSent(true);
               }
             } catch (err: any) {
+              console.error("Feedback submission error:", err);
               alert(`Failed to submit feedback: ${err.message}`);
             } finally {
               setIsSubmitting(false);
@@ -136,9 +139,17 @@ function Visit() {
           </p>
 
           {sent ? (
-            <div className="rounded-2xl bg-secondary p-8 text-center border border-border">
+            <div className="rounded-2xl bg-secondary p-8 text-center border border-border flex flex-col items-center">
               <p className="font-display text-2xl gold-text">Thank you.</p>
-              <p className="text-sm text-muted-foreground mt-2">We appreciate your feedback and will write back if required!</p>
+              <p className="text-sm text-muted-foreground mt-2 mb-4">We appreciate your feedback and will write back if required!</p>
+              <a
+                href="https://search.google.com/local/writereview?placeid=ChIJo30xT7x-qDsRy9iZ-u1s5X4" // Google Maps Place ID for Eternity Ooty or custom review link
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-sm text-accent hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+              >
+                Write a review on Google Maps
+              </a>
             </div>
           ) : (
             <div className="space-y-4">

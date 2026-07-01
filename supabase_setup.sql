@@ -84,8 +84,8 @@ create table if not exists public.orders (
   tax numeric not null default 0,
   total numeric not null,
   payment_status text not null default 'pending',
-  razorpay_order_id text unique not null,
-  razorpay_payment_id text,
+  cashfree_order_id text unique not null,
+  cashfree_payment_id text,
   fulfillment_status text not null default 'pending',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
