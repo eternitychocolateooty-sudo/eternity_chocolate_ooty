@@ -21,7 +21,6 @@ import gift from "@/assets/gift.jpg";
 import g1 from "@/assets/g1.jpg";
 import g3 from "@/assets/g3.jpg";
 import g5 from "@/assets/g5.jpg";
-import { formatMoney } from "@/data/shop";
 import { useCart } from "@/components/CartContext";
 import { resolveProductImage } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -151,7 +150,13 @@ function Home() {
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.description}</p>
                     </Link>
                     <div className="mt-4 flex items-center justify-between">
-                      <span className="font-medium">{formatMoney(p.price)}</span>
+                      <Link
+                        to="/products/$slug"
+                        params={{ slug: p.slug }}
+                        className="text-sm font-medium text-accent hover:underline transition-colors"
+                      >
+                        View Product
+                      </Link>
                       <button
                         onClick={() => cart.addItem(p)}
                         className="inline-flex items-center justify-center rounded-full bg-foreground text-background h-8 w-8 hover:bg-foreground/80 transition-colors"

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
-import { Heart, History, MapPin, ShieldCheck, UserCircle, LogOut, Loader2, Plus, Trash2 } from "lucide-react";
+import { Heart, History, ShieldCheck, UserCircle, LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { formatMoney } from "@/data/shop";
@@ -24,8 +24,8 @@ function AccountPage() {
   // Tab toggle for guest: "login" | "signup"
   const [activeAuthTab, setActiveAuthTab] = useState<"login" | "signup">("login");
   
-  // Dashboard active section: "orders" | "addresses" | "profile"
-  const [activeSection, setActiveSection] = useState<"orders" | "addresses" | "profile">("orders");
+  // Dashboard active section: "orders" | "profile"
+  const [activeSection, setActiveSection] = useState<"orders" | "profile">("orders");
 
   // Form States
   const [email, setEmail] = useState("");
@@ -36,28 +36,15 @@ function AccountPage() {
   const [formSuccess, setFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Address Form States
-  const [recipientName, setRecipientName] = useState("");
-  const [addressPhone, setAddressPhone] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [stateField, setStateField] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-
   // Data States
   const [orders, setOrders] = useState<any[]>([]);
-  const [addresses, setAddresses] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [loadingAddresses, setLoadingAddresses] = useState(false);
 
-  // Fetch Orders & Addresses
+  // Fetch Orders
   useEffect(() => {
     if (user) {
       const fetchUserData = async () => {
         setLoadingOrders(true);
-        setLoadingAddresses(true);
 
         try {
           // Fetch orders
@@ -70,22 +57,10 @@ function AccountPage() {
           if (!ordersErr) {
             setOrders(ordersData || []);
           }
-
-          // Fetch addresses
-          const { data: addressesData, error: addressesErr } = await supabase
-            .from("addresses")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false });
-
-          if (!addressesErr) {
-            setAddresses(addressesData || []);
-          }
         } catch (err) {
           console.error("Failed to load user data:", err);
         } finally {
           setLoadingOrders(false);
-          setLoadingAddresses(false);
         }
       };
 
@@ -125,65 +100,6 @@ function AccountPage() {
       setFormError(err.message || "An authentication error occurred.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleAddAddress = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setIsSubmitting(true);
-
-    try {
-      if (isDefault) {
-        // Clear existing defaults
-        await supabase
-          .from("addresses")
-          .update({ is_default: false })
-          .eq("user_id", user.id);
-      }
-
-      const { data, error } = await supabase
-        .from("addresses")
-        .insert({
-          user_id: user.id,
-          recipient_name: recipientName,
-          phone: addressPhone,
-          street_address: streetAddress,
-          city,
-          state: stateField,
-          postal_code: postalCode,
-          is_default: isDefault,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setAddresses((prev) => [data, ...prev]);
-      setRecipientName("");
-      setAddressPhone("");
-      setStreetAddress("");
-      setCity("");
-      setStateField("");
-      setPostalCode("");
-      setIsDefault(false);
-      setShowAddressForm(false);
-    } catch (err: any) {
-      alert(`Failed to add address: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm("Are you sure you want to delete this address?")) return;
-
-    try {
-      const { error } = await supabase.from("addresses").delete().eq("id", addressId);
-      if (error) throw error;
-      setAddresses((prev) => prev.filter((a) => a.id !== addressId));
-    } catch (err: any) {
-      alert(`Failed to delete address: ${err.message}`);
     }
   };
 
@@ -332,7 +248,6 @@ function AccountPage() {
           <aside className="rounded-3xl bg-card p-6 shadow-soft border border-border/50 h-fit space-y-2">
             {[
               { id: "orders", label: "Order History", Icon: History },
-              { id: "addresses", label: "Address Book", Icon: MapPin },
               { id: "profile", label: "Profile Settings", Icon: ShieldCheck },
             ].map((sec) => (
               <button
@@ -431,139 +346,6 @@ function AccountPage() {
                           <span>Total Paid</span>
                           <span>{formatMoney(Number(order.total))}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 2. ADDRESS BOOK SECTION */}
-            {activeSection === "addresses" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-display text-3xl">Address Book</h2>
-                  {!showAddressForm && (
-                    <button
-                      onClick={() => setShowAddressForm(true)}
-                      className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-medium hover:border-accent"
-                    >
-                      <Plus className="h-3 w-3" /> Add Address
-                    </button>
-                  )}
-                </div>
-
-                {showAddressForm && (
-                  <form onSubmit={handleAddAddress} className="mb-8 rounded-2xl bg-secondary p-5 md:p-6 border border-border/80 space-y-4">
-                    <h3 className="font-display text-lg">New Address Details</h3>
-                    
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Input
-                        label="Recipient Name"
-                        required
-                        value={recipientName}
-                        onChange={(e: any) => setRecipientName(e.target.value)}
-                      />
-                      <Input
-                        label="Phone Number"
-                        required
-                        value={addressPhone}
-                        onChange={(e: any) => setAddressPhone(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Input
-                      label="Street Address"
-                      required
-                      value={streetAddress}
-                      onChange={(e: any) => setStreetAddress(e.target.value)}
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <Input
-                        label="City"
-                        required
-                        value={city}
-                        onChange={(e: any) => setCity(e.target.value)}
-                      />
-                      <Input
-                        label="State"
-                        required
-                        value={stateField}
-                        onChange={(e: any) => setStateField(e.target.value)}
-                      />
-                      <Input
-                        label="Pincode"
-                        required
-                        value={postalCode}
-                        onChange={(e: any) => setPostalCode(e.target.value)}
-                      />
-                    </div>
-
-                    <label className="flex items-center gap-3 cursor-pointer mt-2">
-                      <input
-                        type="checkbox"
-                        checked={isDefault}
-                        onChange={(e) => setIsDefault(e.target.checked)}
-                        className="accent-accent h-4 w-4"
-                      />
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Set as default address</span>
-                    </label>
-
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="rounded-full bg-primary px-5 py-2.5 text-xs text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50"
-                      >
-                        {isSubmitting ? "Saving..." : "Save Address"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddressForm(false)}
-                        className="rounded-full border border-border px-5 py-2.5 text-xs font-medium hover:bg-secondary"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {loadingAddresses ? (
-                  <div className="flex py-12 justify-center"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
-                ) : addresses.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-                    <MapPin className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
-                    <p className="font-display text-xl">No addresses stored.</p>
-                    <p className="text-sm text-muted-foreground mt-1">Add shipping locations to checkout swift on future purchases.</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {addresses.map((address) => (
-                      <div key={address.id} className="relative rounded-2xl border border-border p-5 shadow-soft flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-display text-xl">{address.recipient_name}</span>
-                            {address.is_default && (
-                              <span className="rounded-full bg-accent/25 px-2.5 py-0.5 text-[9px] uppercase tracking-wider text-accent-foreground font-semibold">
-                                Default
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {address.street_address}<br/>
-                            {address.city}, {address.state} - {address.postal_code}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">Mobile: {address.phone}</p>
-                        </div>
-                        
-                        <button
-                          onClick={() => handleDeleteAddress(address.id)}
-                          className="absolute right-4 bottom-4 grid h-8 w-8 place-items-center rounded-full hover:bg-destructive/15 text-destructive transition-all"
-                          title="Delete address"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       </div>
                     ))}
                   </div>

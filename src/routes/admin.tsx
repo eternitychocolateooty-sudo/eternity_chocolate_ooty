@@ -87,7 +87,7 @@ function AdminConsole() {
     setName("");
     setSlug("");
     setDescription("");
-    setCategory("Dark");
+    setCategory("Chocolate");
     setPrice("");
     setSalePrice("");
     setStockQuantity("");
@@ -104,7 +104,7 @@ function AdminConsole() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Dark");
+  const [category, setCategory] = useState("Chocolate");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
@@ -585,9 +585,12 @@ function AdminConsole() {
                       <input
                         value={variantsText}
                         onChange={(e) => setVariantsText(e.target.value)}
-                        placeholder="120g bar, 6-pack box"
+                        placeholder="e.g. 50 g: 150, 100 g: 280, 150 g: 400"
                         className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm focus:outline-none"
                       />
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground block mt-1">
+                        Use <strong>Name: Price</strong> format (e.g. <code>50 g: 150</code>) to assign specific prices to variants.
+                      </span>
                     </label>
 
                     {/* Image File Picker */}

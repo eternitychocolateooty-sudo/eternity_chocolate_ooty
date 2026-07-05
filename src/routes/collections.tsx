@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal, Star } from "lucide-react";
+import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/CartContext";
 import { categories, formatMoney } from "@/data/shop";
@@ -8,16 +8,16 @@ import { resolveProductImage } from "@/lib/utils";
 export const Route = createFileRoute("/collections")({
   head: () => ({
     meta: [
-      { title: "Shop Chocolates - ETERNITY Ooty" },
+      { title: "Shop Collection - ETERNITY Ooty" },
       {
         name: "description",
         content:
-          "Shop premium handmade chocolates from ETERNITY, Ooty. Dark, milk, nut, homemade, gift and seasonal collections.",
+          "Shop premium handmade chocolates, spices, tea, and coffee from ETERNITY, Ooty.",
       },
-      { property: "og:title", content: "Shop ETERNITY Chocolates" },
+      { property: "og:title", content: "Shop ETERNITY Collection" },
       {
         property: "og:description",
-        content: "Premium artisan chocolate boxes, bars, fudge, and seasonal gifts from Ooty.",
+        content: "Premium artisan chocolates, aromatic spices, tea, and coffee from the hills of Ooty.",
       },
     ],
   }),
@@ -58,27 +58,11 @@ function Collections() {
   return (
     <div className="pb-24">
       <section className="container mx-auto px-6 py-16 md:py-24">
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Online Shop</p>
-            <h1 className="font-display text-5xl md:text-7xl text-balance">
-              Choose your chocolate, wrapped in Ooty mist.
-            </h1>
-            <p className="mt-5 max-w-2xl text-muted-foreground leading-relaxed">
-              A production-ready shop experience for bars, fudge, gifting, wishlist, reviews,
-              checkout, and future Supabase inventory.
-            </p>
-          </div>
-          <div className="rounded-3xl glass p-6 shadow-soft">
-            <p className="text-xs uppercase tracking-[0.25em] text-accent">Store Promise</p>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              {["Fresh batch", "COD ready", "Gift notes"].map((item) => (
-                <div key={item} className="rounded-2xl bg-background/70 p-3 text-xs">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Online Shop</p>
+          <h1 className="font-display text-5xl md:text-7xl text-balance">
+            Choose your chocolate, wrapped in Ooty mist.
+          </h1>
         </div>
       </section>
 
@@ -174,11 +158,6 @@ function Collections() {
                   </div>
                 </Link>
                 <div className="p-6">
-                  <div className="mb-2 flex items-center gap-1 text-sm text-accent">
-                    <Star className="h-4 w-4 fill-current" />
-                    <span>{product.rating}</span>
-                    <span className="text-muted-foreground">({product.reviews})</span>
-                  </div>
                   <Link to="/products/$slug" params={{ slug: product.slug }}>
                     <h3 className="font-display text-2xl">{product.name}</h3>
                   </Link>

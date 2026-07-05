@@ -5,6 +5,17 @@ import { supabaseAdmin } from "./supabase";
 export interface CheckoutItem {
   productId: string;
   quantity: number;
+  selectedVariant?: string;
+}
+
+function parseVariant(variantStr: string, basePrice: number) {
+  const parts = variantStr.split(":");
+  if (parts.length >= 2) {
+    const name = parts[0].trim();
+    const price = parseFloat(parts[1].trim());
+    return { name, price: isNaN(price) ? basePrice : price };
+  }
+  return { name: variantStr.trim(), price: basePrice };
 }
 
 export interface CustomerInfo {
@@ -149,7 +160,6 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
             <div style="margin-top: 15px; text-align: right; font-weight: bold; color: #5D4037;">
               Subtotal: ₹${order.subtotal}<br/>
               Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
-              GST (5%): ₹${order.tax}<br/>
               <span style="font-size: 1.2em;">Total: ₹${order.total}</span>
             </div>
 
@@ -274,13 +284,21 @@ export const createCheckoutOrder = createServerFn(
       if (prod.stock_quantity < item.quantity) {
         throw new Error(`Insufficient stock for product ${prod.name}. Available: ${prod.stock_quantity}`);
       }
-      const price = prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price);
+      let price = prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price);
+      if (item.selectedVariant) {
+        const matchingVariantStr = prod.variants?.find(
+          (v: string) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+        );
+        if (matchingVariantStr) {
+          price = parseVariant(matchingVariantStr, price).price;
+        }
+      }
       subtotal += price * item.quantity;
     }
 
     const shippingFee = subtotal > 1500 || subtotal === 0 ? 0 : 120;
-    const tax = Math.round(subtotal * 0.05);
-    const total = subtotal + shippingFee + tax;
+    const tax = 0;
+    const total = subtotal + shippingFee;
 
     const appId = process.env.VITE_CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
@@ -362,11 +380,21 @@ export const createCheckoutOrder = createServerFn(
     // Write order items
     const orderItemsToInsert = items.map((item) => {
       const prod = dbProducts.find((p) => p.id === item.productId);
+      let price = prod ? (prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price)) : 0;
+      if (prod && item.selectedVariant) {
+        const matchingVariantStr = prod.variants?.find(
+          (v: string) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+        );
+        if (matchingVariantStr) {
+          price = parseVariant(matchingVariantStr, price).price;
+        }
+      }
       return {
         order_id: order.id,
         product_id: item.productId,
         quantity: item.quantity,
-        price: prod ? (prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price)) : 0,
+        price,
+        selected_variant: item.selectedVariant || null,
       };
     });
 

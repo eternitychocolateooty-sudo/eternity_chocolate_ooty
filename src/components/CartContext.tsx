@@ -23,16 +23,32 @@ export interface Product {
   variants: string[];
 }
 
+export interface ParsedVariant {
+  name: string;
+  price: number;
+}
+
+export function parseVariant(variantStr: string, basePrice: number): ParsedVariant {
+  const parts = variantStr.split(":");
+  if (parts.length >= 2) {
+    const name = parts[0].trim();
+    const price = parseFloat(parts[1].trim());
+    return { name, price: isNaN(price) ? basePrice : price };
+  }
+  return { name: variantStr.trim(), price: basePrice };
+}
+
 export type CartItem = {
   productId: string;
   quantity: number;
+  selectedVariant?: string;
 };
 
 type CartContextValue = {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number) => Promise<void>;
-  removeItem: (productId: string) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  addItem: (product: Product, quantity?: number, selectedVariant?: string) => Promise<void>;
+  removeItem: (productId: string, selectedVariant?: string) => Promise<void>;
+  updateQuantity: (productId: string, quantity: number, selectedVariant?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   subtotal: number;
   shipping: number;
@@ -79,7 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // 1. Fetch DB items
           const { data: dbCart, error } = await supabase
             .from("cart_items")
-            .select("product_id, quantity")
+            .select("*")
             .eq("user_id", user.id);
 
           if (error) throw error;
@@ -87,6 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const dbItems: CartItem[] = (dbCart || []).map((item) => ({
             productId: item.product_id,
             quantity: item.quantity,
+            selectedVariant: item.selected_variant || undefined,
           }));
 
           // 2. Fetch local storage guest items to merge
@@ -94,36 +111,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const localItems: CartItem[] = local ? JSON.parse(local) : [];
 
           if (localItems.length > 0) {
-            const mergedMap = new Map<string, number>();
+            const mergedMap = new Map<string, CartItem>();
 
             // Load DB items into map
-            dbItems.forEach((item) => mergedMap.set(item.productId, item.quantity));
+            dbItems.forEach((item) => {
+              const key = item.productId + "::" + (item.selectedVariant || "");
+              mergedMap.set(key, item);
+            });
 
             // Merge local items
             localItems.forEach((localItem) => {
-              const currentQty = mergedMap.get(localItem.productId) || 0;
+              const key = localItem.productId + "::" + (localItem.selectedVariant || "");
+              const existing = mergedMap.get(key);
+              const currentQty = existing ? existing.quantity : 0;
               const prod = dbProducts.find((p) => p.id === localItem.productId);
               const maxStock = prod ? prod.stock_quantity : 99;
-              mergedMap.set(localItem.productId, Math.min(currentQty + localItem.quantity, maxStock));
+              const newQty = Math.min(currentQty + localItem.quantity, maxStock);
+              mergedMap.set(key, {
+                productId: localItem.productId,
+                quantity: newQty,
+                selectedVariant: localItem.selectedVariant,
+              });
             });
 
-            const mergedList: CartItem[] = Array.from(mergedMap.entries()).map(([productId, quantity]) => ({
-              productId,
-              quantity,
-            }));
+            const mergedList = Array.from(mergedMap.values());
 
             // Upsert merged cart items to Supabase
             const upserts = mergedList.map((item) => ({
               user_id: user.id,
               product_id: item.productId,
               quantity: item.quantity,
+              selected_variant: item.selectedVariant || null,
             }));
 
-            const { error: upsertErr } = await supabase
-              .from("cart_items")
-              .upsert(upserts, { onConflict: "user_id,product_id" });
+            try {
+              const { error: upsertErr } = await supabase
+                .from("cart_items")
+                .upsert(upserts, { onConflict: "user_id,product_id,selected_variant" });
 
-            if (upsertErr) throw upsertErr;
+              if (upsertErr) throw upsertErr;
+            } catch (dbErr) {
+              console.warn("DB Upsert failed, likely schema is not updated yet. Falling back to local state.", dbErr);
+            }
 
             // Clear guest local cart
             window.localStorage.removeItem(cartStorageKey);
@@ -158,18 +187,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, user, hasSynced]);
 
-  const addItem = async (product: Product, quantity = 1) => {
+  const addItem = async (product: Product, quantity = 1, selectedVariant?: string) => {
     if (product.status === "sold-out") return;
 
-    const currentItem = items.find((item) => item.productId === product.id);
+    const currentItem = items.find(
+      (item) => item.productId === product.id && item.selectedVariant === selectedVariant
+    );
     const currentQty = currentItem ? currentItem.quantity : 0;
     const nextQty = Math.min(currentQty + quantity, product.stock_quantity);
 
     if (nextQty <= 0) return;
 
     const updatedItems = currentItem
-      ? items.map((item) => (item.productId === product.id ? { ...item, quantity: nextQty } : item))
-      : [...items, { productId: product.id, quantity: nextQty }];
+      ? items.map((item) =>
+          item.productId === product.id && item.selectedVariant === selectedVariant
+            ? { ...item, quantity: nextQty }
+            : item
+        )
+      : [...items, { productId: product.id, quantity: nextQty, selectedVariant }];
 
     setItems(updatedItems);
 
@@ -179,48 +214,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
           user_id: user.id,
           product_id: product.id,
           quantity: nextQty,
-        }, { onConflict: "user_id,product_id" });
+          selected_variant: selectedVariant || null,
+        }, { onConflict: "user_id,product_id,selected_variant" });
       } catch (err) {
         console.error("Failed to add cart item to database:", err);
       }
     }
   };
 
-  const removeItem = async (productId: string) => {
-    const updatedItems = items.filter((item) => item.productId !== productId);
+  const removeItem = async (productId: string, selectedVariant?: string) => {
+    const updatedItems = items.filter(
+      (item) => !(item.productId === productId && item.selectedVariant === selectedVariant)
+    );
     setItems(updatedItems);
 
     if (user) {
       try {
-        await supabase
+        const query = supabase
           .from("cart_items")
           .delete()
           .eq("user_id", user.id)
           .eq("product_id", productId);
+
+        if (selectedVariant) {
+          query.eq("selected_variant", selectedVariant);
+        } else {
+          query.is("selected_variant", null);
+        }
+
+        await query;
       } catch (err) {
         console.error("Failed to remove cart item from database:", err);
       }
     }
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
+  const updateQuantity = async (productId: string, quantity: number, selectedVariant?: string) => {
     const prod = dbProducts.find((p) => p.id === productId);
     if (!prod) return;
 
     const nextQty = Math.max(1, Math.min(quantity, prod.stock_quantity));
 
     const updatedItems = items.map((item) =>
-      item.productId === productId ? { ...item, quantity: nextQty } : item
+      item.productId === productId && item.selectedVariant === selectedVariant
+        ? { ...item, quantity: nextQty }
+        : item
     );
     setItems(updatedItems);
 
     if (user) {
       try {
-        await supabase
+        const query = supabase
           .from("cart_items")
           .update({ quantity: nextQty })
           .eq("user_id", user.id)
           .eq("product_id", productId);
+
+        if (selectedVariant) {
+          query.eq("selected_variant", selectedVariant);
+        } else {
+          query.is("selected_variant", null);
+        }
+
+        await query;
       } catch (err) {
         console.error("Failed to update cart quantity in database:", err);
       }
@@ -244,14 +300,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return items.reduce((sum, item) => {
       const product = dbProducts.find((p) => p.id === item.productId);
       if (!product) return sum;
-      const price = product.sale_price !== undefined ? product.sale_price : product.price;
+      let price = product.sale_price !== undefined ? product.sale_price : product.price;
+      if (item.selectedVariant) {
+        const matchingVariantStr = product.variants?.find(
+          (v) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+        );
+        if (matchingVariantStr) {
+          price = parseVariant(matchingVariantStr, price).price;
+        }
+      }
       return sum + price * item.quantity;
     }, 0);
   }, [items, dbProducts]);
 
   const shipping = subtotal > 1500 || subtotal === 0 ? 0 : 120;
-  const tax = Math.round(subtotal * 0.05);
-  const total = subtotal + shipping + tax;
+  const tax = 0;
+  const total = subtotal + shipping;
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (

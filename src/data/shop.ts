@@ -5,7 +5,7 @@ import milk from "@/assets/milk.jpg";
 import nuts from "@/assets/nuts.jpg";
 import seasonal from "@/assets/seasonal.jpg";
 
-export type ProductCategory = "Dark" | "Milk" | "Nuts" | "Homemade" | "Gift Packs" | "Seasonal";
+export type ProductCategory = "Chocolate" | "Spices" | "Tea" | "Coffee";
 
 export type Product = {
   id: string;
@@ -35,7 +35,7 @@ export const products: Product[] = [
     slug: "single-origin-70",
     description:
       "Slow-roasted Idukki cocoa with a clean snap, deep fruit notes, and a long finish.",
-    category: "Dark",
+    category: "Chocolate",
     price: 420,
     stockQuantity: 24,
     featured: true,
@@ -54,7 +54,7 @@ export const products: Product[] = [
     name: "Velvet Milk",
     slug: "velvet-milk",
     description: "Creamy Nilgiri milk chocolate with caramel warmth and a soft, silken melt.",
-    category: "Milk",
+    category: "Chocolate",
     price: 360,
     salePrice: 320,
     stockQuantity: 18,
@@ -74,7 +74,7 @@ export const products: Product[] = [
     name: "Almond & Honey",
     slug: "almond-honey",
     description: "Roasted almonds folded through chocolate and finished with golden hill honey.",
-    category: "Nuts",
+    category: "Chocolate",
     price: 480,
     stockQuantity: 9,
     featured: true,
@@ -93,7 +93,7 @@ export const products: Product[] = [
     name: "Walnut Fudge",
     slug: "walnut-fudge",
     description: "Old-recipe homemade fudge, lightly salted and wrapped fresh every morning.",
-    category: "Homemade",
+    category: "Chocolate",
     price: 300,
     stockQuantity: 30,
     featured: false,
@@ -112,7 +112,7 @@ export const products: Product[] = [
     name: "Petite Gift Box",
     slug: "petite-gift-box",
     description: "Twelve hand-finished chocolates in a gold-tied gift box for Ooty travellers.",
-    category: "Gift Packs",
+    category: "Chocolate",
     price: 950,
     stockQuantity: 14,
     featured: true,
@@ -131,7 +131,7 @@ export const products: Product[] = [
     name: "Winter Spice",
     slug: "winter-spice",
     description: "Cinnamon-orange dark chocolate made for misty evenings and festival gifting.",
-    category: "Seasonal",
+    category: "Chocolate",
     price: 520,
     stockQuantity: 0,
     featured: false,
@@ -149,12 +149,10 @@ export const products: Product[] = [
 
 export const categories = [
   "All",
-  "Dark",
-  "Milk",
-  "Nuts",
-  "Homemade",
-  "Gift Packs",
-  "Seasonal",
+  "Chocolate",
+  "Spices",
+  "Tea",
+  "Coffee",
 ] as const;
 
 export const formatMoney = (value: number) =>

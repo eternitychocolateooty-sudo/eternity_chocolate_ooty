@@ -6,16 +6,14 @@ import {
   MapPin,
   MessageCircle,
   Minus,
-  Moon,
   Phone,
   Plus,
   ShoppingBag,
-  Sun,
   Trash2,
   X,
 } from "lucide-react";
-import { useCart } from "@/components/CartContext";
-import { formatMoney, products } from "@/data/shop";
+import { useCart, parseVariant } from "@/components/CartContext";
+import { formatMoney } from "@/data/shop";
 import logoImg from "@/assets/logo.png";
 
 const navItems = [
@@ -39,20 +37,10 @@ function useScrolled(threshold = 30) {
 }
 
 function useDarkMode() {
-  const [dark, setDark] = useState(true);
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("ck-theme") : null;
-    const isDark = saved === null ? true : saved === "dark";
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.classList.add("dark");
   }, []);
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("ck-theme", next ? "dark" : "light");
-  };
-  return { dark, toggle };
+  return { dark: true, toggle: () => {} };
 }
 
 function FloatingNav() {
@@ -106,13 +94,6 @@ function FloatingNav() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggle}
-              aria-label="Toggle theme"
-              className="grid h-9 w-9 place-items-center rounded-full border border-border/60 hover:border-accent transition-all"
-            >
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
             <button
               onClick={() => setCartOpen(true)}
               aria-label="Open cart"
@@ -174,10 +155,10 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const cartProducts = cart.items
     .map((item) => ({
       item,
-      product: products.find((product) => product.id === item.productId),
+      product: cart.products.find((p) => p.id === item.productId),
     }))
     .filter(
-      (entry): entry is { item: (typeof cart.items)[number]; product: (typeof products)[number] } =>
+      (entry): entry is { item: (typeof cart.items)[number]; product: (typeof cart.products)[number] } =>
         Boolean(entry.product),
     );
 
@@ -220,55 +201,72 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
         ) : (
           <>
             <div className="mt-8 space-y-4">
-              {cartProducts.map(({ item, product }) => (
-                <div
-                  key={product.id}
-                  className="grid grid-cols-[76px_1fr] gap-4 rounded-2xl bg-card p-3 shadow-soft"
-                >
-                  <img
-                    src={product.images[0]}
-                    alt={product.name}
-                    className="h-20 w-20 rounded-xl object-cover"
-                  />
-                  <div>
-                    <div className="flex justify-between gap-3">
-                      <div>
-                        <p className="font-display text-lg">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">{product.weight}</p>
-                      </div>
-                      <button
-                        aria-label={`Remove ${product.name}`}
-                        onClick={() => cart.removeItem(product.id)}
-                        className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center rounded-full border border-border">
+              {cartProducts.map(({ item, product }) => {
+                const itemPrice = (() => {
+                  let base = product.sale_price !== undefined ? product.sale_price : product.price;
+                  if (item.selectedVariant) {
+                    const matchingVariantStr = product.variants?.find(
+                      (v) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+                    );
+                    if (matchingVariantStr) {
+                      base = parseVariant(matchingVariantStr, base).price;
+                    }
+                  }
+                  return base;
+                })();
+
+                return (
+                  <div
+                    key={`${product.id}-${item.selectedVariant || ""}`}
+                    className="grid grid-cols-[76px_1fr] gap-4 rounded-2xl bg-card p-3 shadow-soft"
+                  >
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="h-20 w-20 rounded-xl object-cover"
+                    />
+                    <div>
+                      <div className="flex justify-between gap-3">
+                        <div>
+                          <p className="font-display text-lg">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.selectedVariant ? `Variant: ${item.selectedVariant}` : product.weight}
+                          </p>
+                        </div>
                         <button
-                          aria-label="Decrease quantity"
-                          onClick={() => cart.updateQuantity(product.id, item.quantity - 1)}
-                          className="grid h-8 w-8 place-items-center"
+                          aria-label={`Remove ${product.name}`}
+                          onClick={() => cart.removeItem(product.id, item.selectedVariant)}
+                          className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
                         >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-8 text-center text-sm">{item.quantity}</span>
-                        <button
-                          aria-label="Increase quantity"
-                          onClick={() => cart.updateQuantity(product.id, item.quantity + 1)}
-                          className="grid h-8 w-8 place-items-center"
-                        >
-                          <Plus className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="text-sm font-medium">
-                        {formatMoney((product.salePrice ?? product.price) * item.quantity)}
-                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center rounded-full border border-border">
+                          <button
+                            aria-label="Decrease quantity"
+                            onClick={() => cart.updateQuantity(product.id, item.quantity - 1, item.selectedVariant)}
+                            className="grid h-8 w-8 place-items-center"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-8 text-center text-sm">{item.quantity}</span>
+                          <button
+                            aria-label="Increase quantity"
+                            onClick={() => cart.updateQuantity(product.id, item.quantity + 1, item.selectedVariant)}
+                            className="grid h-8 w-8 place-items-center"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <p className="text-sm font-medium">
+                          {formatMoney(itemPrice * item.quantity)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-8 rounded-3xl bg-card p-5 shadow-soft">
               <div className="space-y-2 text-sm">
@@ -279,10 +277,6 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span>{cart.shipping === 0 ? "Free" : formatMoney(cart.shipping)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>GST estimate</span>
-                  <span>{formatMoney(cart.tax)}</span>
                 </div>
               </div>
               <div className="divider-gold my-4" />

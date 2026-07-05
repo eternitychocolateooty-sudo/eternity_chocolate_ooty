@@ -1,6 +1,12 @@
 -- Supabase Database Setup & Initial Seed Data for ETERNITY
 -- Execute this SQL in your Supabase SQL Editor.
 
+-- ALTER STATEMENTS (If database tables already exist, run these statements to add variants columns):
+-- ALTER TABLE public.cart_items ADD COLUMN IF NOT EXISTS selected_variant text;
+-- ALTER TABLE public.cart_items DROP CONSTRAINT IF EXISTS cart_items_user_id_product_id_key;
+-- ALTER TABLE public.cart_items ADD CONSTRAINT cart_items_user_id_product_id_selected_variant_key UNIQUE (user_id, product_id, selected_variant);
+-- ALTER TABLE public.order_items ADD COLUMN IF NOT EXISTS selected_variant text;
+
 create extension if not exists "uuid-ossp";
 
 -- USER ROLE ENUM
@@ -67,8 +73,9 @@ create table if not exists public.cart_items (
   user_id uuid references auth.users on delete cascade not null,
   product_id text references public.products(id) on delete cascade not null,
   quantity integer not null check (quantity > 0),
+  selected_variant text,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(user_id, product_id)
+  unique(user_id, product_id, selected_variant)
 );
 
 -- Orders Table
@@ -96,7 +103,8 @@ create table if not exists public.order_items (
   order_id uuid references public.orders(id) on delete cascade not null,
   product_id text references public.products(id) not null,
   quantity integer not null check (quantity > 0),
-  price numeric not null
+  price numeric not null,
+  selected_variant text
 );
 
 -- Feedbacks Table
@@ -296,12 +304,12 @@ create policy "Allow admins to manage feedback"
 -- =========================================================================
 
 insert into public.products (id, name, slug, description, category, price, sale_price, stock_quantity, featured, images, ingredients, weight, rating, reviews, popularity, status, variants) values
-('cc-dark-70', 'Single-Origin 70%', 'single-origin-70', 'Slow-roasted Idukki cocoa with a clean snap, deep fruit notes, and a long finish.', 'Dark', 420, null, 24, true, array['dark.jpg', 'nuts.jpg', 'gift.jpg'], array['Cocoa mass', 'Cocoa butter', 'Raw cane sugar', 'Cocoa nibs'], '100 g', 4.9, 86, 98, 'available', array['70% bar', '75% sea salt', 'Nib bark']),
-('cc-milk-velvet', 'Velvet Milk', 'velvet-milk', 'Creamy Nilgiri milk chocolate with caramel warmth and a soft, silken melt.', 'Milk', 360, 320, 18, true, array['milk.jpg', 'homemade.jpg', 'gift.jpg'], array['Cocoa butter', 'Milk powder', 'Cocoa mass', 'Cane sugar'], '100 g', 4.8, 64, 91, 'available', array['Classic', 'Caramel', 'Hot chocolate cube']),
-('cc-almond-honey', 'Almond & Honey', 'almond-honey', 'Roasted almonds folded through chocolate and finished with golden hill honey.', 'Nuts', 480, null, 9, true, array['nuts.jpg', 'dark.jpg', 'seasonal.jpg'], array['Almonds', 'Cocoa mass', 'Honey', 'Cocoa butter', 'Cane sugar'], '120 g', 4.9, 73, 96, 'low-stock', array['Almond slab', 'Hazelnut praline', 'Cashew brittle']),
-('cc-walnut-fudge', 'Walnut Fudge', 'walnut-fudge', 'Old-recipe homemade fudge, lightly salted and wrapped fresh every morning.', 'Homemade', 300, null, 30, false, array['homemade.jpg', 'milk.jpg', 'nuts.jpg'], array['Milk', 'Cocoa', 'Walnuts', 'Butter', 'Cane sugar'], '150 g', 4.7, 41, 76, 'available', array['Walnut', 'Coconut bark', 'Classic fudge']),
-('cc-petite-box', 'Petite Gift Box', 'petite-gift-box', 'Twelve hand-finished chocolates in a gold-tied gift box for Ooty travellers.', 'Gift Packs', 950, null, 14, true, array['gift.jpg', 'dark.jpg', 'seasonal.jpg'], array['Assorted dark, milk, nut, and seasonal chocolates'], '12 pieces', 5, 58, 94, 'available', array['12 pieces', '24 pieces', 'Custom note']),
-('cc-winter-spice', 'Winter Spice', 'winter-spice', 'Cinnamon-orange dark chocolate made for misty evenings and festival gifting.', 'Seasonal', 520, null, 0, false, array['seasonal.jpg', 'gift.jpg', 'dark.jpg'], array['Cocoa mass', 'Orange peel', 'Cinnamon', 'Cocoa butter'], '100 g', 4.8, 29, 82, 'sold-out', array['Winter spice', 'Monsoon coffee'])
+('cc-dark-70', 'Single-Origin 70%', 'single-origin-70', 'Slow-roasted Idukki cocoa with a clean snap, deep fruit notes, and a long finish.', 'Chocolate', 420, null, 24, true, array['dark.jpg', 'nuts.jpg', 'gift.jpg'], array['Cocoa mass', 'Cocoa butter', 'Raw cane sugar', 'Cocoa nibs'], '100 g', 4.9, 86, 98, 'available', array['70% bar', '75% sea salt', 'Nib bark']),
+('cc-milk-velvet', 'Velvet Milk', 'velvet-milk', 'Creamy Nilgiri milk chocolate with caramel warmth and a soft, silken melt.', 'Chocolate', 360, 320, 18, true, array['milk.jpg', 'homemade.jpg', 'gift.jpg'], array['Cocoa butter', 'Milk powder', 'Cocoa mass', 'Cane sugar'], '100 g', 4.8, 64, 91, 'available', array['Classic', 'Caramel', 'Hot chocolate cube']),
+('cc-almond-honey', 'Almond & Honey', 'almond-honey', 'Roasted almonds folded through chocolate and finished with golden hill honey.', 'Chocolate', 480, null, 9, true, array['nuts.jpg', 'dark.jpg', 'seasonal.jpg'], array['Almonds', 'Cocoa mass', 'Honey', 'Cocoa butter', 'Cane sugar'], '120 g', 4.9, 73, 96, 'low-stock', array['Almond slab', 'Hazelnut praline', 'Cashew brittle']),
+('cc-walnut-fudge', 'Walnut Fudge', 'walnut-fudge', 'Old-recipe homemade fudge, lightly salted and wrapped fresh every morning.', 'Chocolate', 300, null, 30, false, array['homemade.jpg', 'milk.jpg', 'nuts.jpg'], array['Milk', 'Cocoa', 'Walnuts', 'Butter', 'Cane sugar'], '150 g', 4.7, 41, 76, 'available', array['Walnut', 'Coconut bark', 'Classic fudge']),
+('cc-petite-box', 'Petite Gift Box', 'petite-gift-box', 'Twelve hand-finished chocolates in a gold-tied gift box for Ooty travellers.', 'Chocolate', 950, null, 14, true, array['gift.jpg', 'dark.jpg', 'seasonal.jpg'], array['Assorted dark, milk, nut, and seasonal chocolates'], '12 pieces', 5, 58, 94, 'available', array['12 pieces', '24 pieces', 'Custom note']),
+('cc-winter-spice', 'Winter Spice', 'winter-spice', 'Cinnamon-orange dark chocolate made for misty evenings and festival gifting.', 'Chocolate', 520, null, 0, false, array['seasonal.jpg', 'gift.jpg', 'dark.jpg'], array['Cocoa mass', 'Orange peel', 'Cinnamon', 'Cocoa butter'], '100 g', 4.8, 29, 82, 'sold-out', array['Winter spice', 'Monsoon coffee'])
 on conflict (id) do update set
   name = excluded.name,
   slug = excluded.slug,
@@ -319,3 +327,37 @@ on conflict (id) do update set
   popularity = excluded.popularity,
   status = excluded.status,
   variants = excluded.variants;
+
+-- =========================================================================
+-- 6. STORAGE BUCKET SETUP
+-- =========================================================================
+
+-- Create the 'product-images' bucket if it does not exist
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do nothing;
+
+-- Storage policies for public reading of product images
+drop policy if exists "Allow public read access to product-images" on storage.objects;
+create policy "Allow public read access to product-images"
+  on storage.objects for select
+  using (bucket_id = 'product-images');
+
+-- Storage policies for admins to insert/upload product images
+drop policy if exists "Allow admins to insert files into product-images" on storage.objects;
+create policy "Allow admins to insert files into product-images"
+  on storage.objects for insert
+  with check (bucket_id = 'product-images' and public.is_admin(auth.uid()));
+
+-- Storage policies for admins to update product images
+drop policy if exists "Allow admins to update files in product-images" on storage.objects;
+create policy "Allow admins to update files in product-images"
+  on storage.objects for update
+  using (bucket_id = 'product-images' and public.is_admin(auth.uid()));
+
+-- Storage policies for admins to delete product images
+drop policy if exists "Allow admins to delete files from product-images" on storage.objects;
+create policy "Allow admins to delete files from product-images"
+  on storage.objects for delete
+  using (bucket_id = 'product-images' and public.is_admin(auth.uid()));
+

@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Phone, Clock, Instagram, Facebook, MessageCircle, Mail, Send, Star, Loader2 } from "lucide-react";
+import { MapPin, Phone, Clock, Instagram, Facebook, MessageCircle, Mail, Star } from "lucide-react";
 import storeImg from "@/assets/store.jpg";
-import { useState } from "react";
-import { submitFeedback } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/visit")({
   head: () => ({
@@ -11,7 +9,7 @@ export const Route = createFileRoute("/visit")({
       {
         name: "description",
         content:
-          "Find us at Bharathiyar Complex, Ooty. Open 9 am Closes 10:30 pm. Call, WhatsApp, or send us a note.",
+          "Find us at Bharathiyar Complex, Ooty. Open 9 am Closes 10:30 pm. Call, WhatsApp, or write a Google Maps review.",
       },
       { property: "og:title", content: "Visit ETERNITY — Ooty" },
       {
@@ -24,45 +22,6 @@ export const Route = createFileRoute("/visit")({
 });
 
 function Visit() {
-  const [sent, setSent] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleFormSubmit = async () => {
-    console.log("Feedback form direct onClick triggered:", { name, email, rating, message });
-    if (!name.trim() || !email.trim() || !message.trim()) {
-      alert("Please fill out all the fields (Name, Email, and Message).");
-      return;
-    }
-    if (!email.includes("@")) {
-      alert("Please enter a valid email address.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await submitFeedback({
-        name,
-        email,
-        rating,
-        message,
-      });
-      console.log("Feedback API response:", res);
-      if (res.success) {
-        setSent(true);
-      }
-    } catch (err: any) {
-      console.error("Feedback submission error:", err);
-      alert(`Failed to submit feedback: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="pb-24">
       {/* HERO */}
@@ -137,126 +96,24 @@ function Visit() {
           </div>
         </div>
 
-        {/* INQUIRY/FEEDBACK FORM */}
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className="rounded-3xl bg-card p-8 md:p-10 shadow-luxe"
-        >
-          <h2 className="font-display text-3xl mb-2">Send a note.</h2>
-          <p className="text-sm text-muted-foreground mb-8">
-            Submit your feedback, custom enquiries, or review of our chocolate boutique.
+        {/* GOOGLE MAP REVIEW CARD */}
+        <div className="rounded-3xl bg-card p-8 md:p-10 shadow-luxe flex flex-col justify-center items-center text-center">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-gold mb-6 shadow-gold">
+            <Star className="h-8 w-8 text-[oklch(0.22_0.035_50)] fill-current" />
+          </div>
+          <h2 className="font-display text-4xl mb-4">Give us your review on Google Map</h2>
+          <p className="text-muted-foreground leading-relaxed max-w-md mb-8">
+            Loved our chocolates? Share your experience with other travellers and chocolate lovers by writing a review on our Google Maps profile.
           </p>
-
-          {sent ? (
-            <div className="rounded-2xl bg-secondary p-8 text-center border border-border flex flex-col items-center">
-              <p className="font-display text-2xl gold-text">Thank you.</p>
-              <p className="text-sm text-muted-foreground mt-2 mb-4">We appreciate your feedback and will write back if required!</p>
-              <a
-                href="https://search.google.com/local/writereview?placeid=ChIJo30xT7x-qDsRy9iZ-u1s5X4" // Google Maps Place ID for Eternity Ooty or custom review link
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-sm text-accent hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
-              >
-                Write a review on Google Maps
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Star Rating Select */}
-              <div className="flex flex-col gap-1.5 mb-2">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Your Rating</span>
-                <div className="flex text-accent gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    const starValue = i + 1;
-                    const active = hoverRating !== null ? starValue <= hoverRating : starValue <= rating;
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setRating(starValue)}
-                        onMouseEnter={() => setHoverRating(starValue)}
-                        onMouseLeave={() => setHoverRating(null)}
-                        className="p-0.5 transition-transform hover:scale-110"
-                        aria-label={`Rate ${starValue} stars`}
-                      >
-                        <Star className={`h-6 w-6 ${active ? "fill-current" : "text-muted/30"}`} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="name"
-                  className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Jane Doe"
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane.doe@example.com"
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="msg"
-                  className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  Message
-                </label>
-                <textarea
-                  id="msg"
-                  required
-                  rows={4}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Share your thoughts about ETERNITY..."
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleFormSubmit}
-                disabled={isSubmitting}
-                className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground py-3.5 font-medium hover:opacity-90 transition-opacity shadow-soft disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    Send <Send className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </form>
+          <a
+            href="https://search.google.com/local/writereview?placeid=ChIJo30xT7x-qDsRy9iZ-u1s5X4"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-3 rounded-full bg-gradient-gold px-8 py-4 text-[oklch(0.22_0.035_50)] font-semibold shadow-gold hover:-translate-y-0.5 transition-all"
+          >
+            <Star className="h-5 w-5 fill-current" /> Write a Review
+          </a>
+        </div>
       </section>
 
       {/* MAP */}

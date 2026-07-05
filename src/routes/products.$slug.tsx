@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useCart } from "@/components/CartContext";
+import { ArrowLeft, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useCart, parseVariant } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
 import { resolveProductImage } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -56,7 +56,21 @@ function ProductDetails() {
       .concat(cart.products.filter((item) => item.id !== product.id && item.category !== product.category))
       .slice(0, 3);
   }, [product, cart.products]);
-  const price = product.sale_price !== undefined ? product.sale_price : product.price;
+
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+
+  useEffect(() => {
+    setSelectedVariantIndex(0);
+  }, [product.id]);
+
+  const baseActivePrice = product.sale_price !== undefined ? product.sale_price : product.price;
+  const parsedVariants = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) return [];
+    return product.variants.map((v) => parseVariant(v, baseActivePrice));
+  }, [product.variants, baseActivePrice]);
+
+  const selectedVariant = parsedVariants[selectedVariantIndex] || null;
+  const price = selectedVariant ? selectedVariant.price : baseActivePrice;
 
   return (
     <div className="pb-24">
@@ -96,19 +110,37 @@ function ProductDetails() {
           <div className="lg:sticky lg:top-28 lg:self-start">
             <p className="text-sm uppercase tracking-[0.3em] text-accent">{product.category}</p>
             <h1 className="mt-4 font-display text-5xl md:text-6xl text-balance">{product.name}</h1>
-            <div className="mt-4 flex items-center gap-2 text-accent">
-              <Star className="h-5 w-5 fill-current" />
-              <span className="font-medium">{product.rating}</span>
-              <span className="text-sm text-muted-foreground">{product.reviews} reviews</span>
-            </div>
             <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
+
+            {parsedVariants.length > 0 && (
+              <div className="mt-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3 font-semibold">
+                  Select Size
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {parsedVariants.map((v, index) => (
+                    <button
+                      key={v.name}
+                      onClick={() => setSelectedVariantIndex(index)}
+                      className={`h-11 px-5 rounded-xl border text-sm font-medium transition-all ${
+                        selectedVariantIndex === index
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-border bg-transparent text-foreground hover:border-accent"
+                      }`}
+                    >
+                      {v.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-8 rounded-3xl bg-card p-6 shadow-soft">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Price</p>
                   <p className="font-display text-4xl">{formatMoney(price)}</p>
-                  {product.salePrice && (
+                  {product.sale_price && !selectedVariant && (
                     <p className="text-sm text-muted-foreground line-through">
                       {formatMoney(product.price)}
                     </p>
@@ -137,7 +169,7 @@ function ProductDetails() {
                   <span className="w-10 text-center">{quantity}</span>
                   <button
                     onClick={() =>
-                      setQuantity((value) => Math.min(product.stockQuantity || 1, value + 1))
+                      setQuantity((value) => Math.min(product.stock_quantity || 1, value + 1))
                     }
                     className="grid h-12 w-12 place-items-center"
                     aria-label="Increase quantity"
@@ -146,7 +178,7 @@ function ProductDetails() {
                   </button>
                 </div>
                 <button
-                  onClick={() => cart.addItem(product, quantity)}
+                  onClick={() => cart.addItem(product, quantity, selectedVariant?.name)}
                   disabled={product.status === "sold-out"}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-primary-foreground shadow-soft disabled:opacity-50"
                 >
@@ -158,7 +190,7 @@ function ProductDetails() {
 
               <Link
                 to="/checkout"
-                onClick={() => cart.addItem(product, quantity)}
+                onClick={() => cart.addItem(product, quantity, selectedVariant?.name)}
                 className="mt-4 inline-flex w-full justify-center rounded-full bg-gradient-gold px-6 py-3 font-medium text-[oklch(0.22_0.035_50)] shadow-gold"
               >
                 Buy now

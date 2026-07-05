@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
-import { useCart } from "@/components/CartContext";
+import { useCart, parseVariant } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
 import { formatMoney } from "@/data/shop";
 import { resolveProductImage } from "@/lib/utils";
@@ -367,8 +367,22 @@ function Checkout() {
             {cart.items.map((item) => {
               const product = cart.products.find((p) => p.id === item.productId);
               if (!product) return null;
+              
+              const itemPrice = (() => {
+                let base = product.sale_price !== undefined ? product.sale_price : product.price;
+                if (item.selectedVariant) {
+                  const matchingVariantStr = product.variants?.find(
+                    (v) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+                  );
+                  if (matchingVariantStr) {
+                    base = parseVariant(matchingVariantStr, base).price;
+                  }
+                }
+                return base;
+              })();
+
               return (
-                <div key={product.id} className="flex gap-4">
+                <div key={`${product.id}-${item.selectedVariant || ""}`} className="flex gap-4">
                   <img
                     src={resolveProductImage(product.images[0])}
                     alt={product.name}
@@ -377,11 +391,11 @@ function Checkout() {
                   <div className="flex-1">
                     <p className="font-display">{product.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Qty {item.quantity} · {product.weight}
+                      Qty {item.quantity} · {item.selectedVariant ? `Variant: ${item.selectedVariant}` : product.weight}
                     </p>
                   </div>
                   <p className="text-sm font-medium">
-                    {formatMoney((product.sale_price !== undefined ? product.sale_price : product.price) * item.quantity)}
+                    {formatMoney(itemPrice * item.quantity)}
                   </p>
                 </div>
               );
@@ -391,7 +405,6 @@ function Checkout() {
           <div className="mb-5 space-y-3">
             <Row label="Subtotal" value={formatMoney(cart.subtotal)} />
             <Row label="Shipping" value={cart.shipping === 0 ? "Free" : formatMoney(cart.shipping)} />
-            <Row label="GST (5%)" value={formatMoney(cart.tax)} />
           </div>
           <div className="divider-gold my-5" />
           <Row label="Total" value={formatMoney(cart.total)} bold />
