@@ -106,7 +106,7 @@ function Visit() {
             Loved our chocolates? Share your experience with other travellers and chocolate lovers by writing a review on our Google Maps profile.
           </p>
           <a
-            href="https://search.google.com/local/writereview?placeid=ChIJo30xT7x-qDsRy9iZ-u1s5X4"
+            href="https://www.google.com/maps/search/?api=1&query=Eternity+Supper+Market+Charing+Cross+Ooty"
             target="_blank"
             rel="noreferrer noopener"
             className="inline-flex items-center gap-3 rounded-full bg-gradient-gold px-8 py-4 text-[oklch(0.22_0.035_50)] font-semibold shadow-gold hover:-translate-y-0.5 transition-all"
