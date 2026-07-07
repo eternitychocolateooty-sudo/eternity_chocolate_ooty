@@ -390,8 +390,15 @@ function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-[oklch(0.94_0.02_80/0.12)] py-6 text-center text-xs text-[oklch(0.94_0.02_80/0.5)]">
-        © {new Date().getFullYear()} ETERNITY · Crafted with love in the Nilgiris.
+      <div className="border-t border-[oklch(0.94_0.02_80/0.12)] py-6">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[oklch(0.94_0.02_80/0.5)]">
+          <p>© {new Date().getFullYear()} ETERNITY · Crafted with love in the Nilgiris.</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
+            <Link to="/terms" className="hover:text-accent transition-colors">Terms & Conditions</Link>
+            <Link to="/privacy" className="hover:text-accent transition-colors">Privacy Policy</Link>
+            <Link to="/refund" className="hover:text-accent transition-colors">Refund & Cancellation</Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

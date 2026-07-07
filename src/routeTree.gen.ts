@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VisitRouteImport } from './routes/visit'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoryRouteImport } from './routes/story'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -25,9 +28,24 @@ const VisitRoute = VisitRouteImport.update({
   path: '/visit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoryRoute = StoryRouteImport.update({
   id: '/story',
   path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -78,7 +96,10 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/collections': typeof CollectionsRoute
   '/gallery': typeof GalleryRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/story': typeof StoryRoute
+  '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -90,7 +111,10 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/collections': typeof CollectionsRoute
   '/gallery': typeof GalleryRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/story': typeof StoryRoute
+  '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -103,7 +127,10 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/collections': typeof CollectionsRoute
   '/gallery': typeof GalleryRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/story': typeof StoryRoute
+  '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -117,7 +144,10 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/collections'
     | '/gallery'
+    | '/privacy'
+    | '/refund'
     | '/story'
+    | '/terms'
     | '/visit'
     | '/auth/callback'
     | '/products/$slug'
@@ -129,7 +159,10 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/collections'
     | '/gallery'
+    | '/privacy'
+    | '/refund'
     | '/story'
+    | '/terms'
     | '/visit'
     | '/auth/callback'
     | '/products/$slug'
@@ -141,7 +174,10 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/collections'
     | '/gallery'
+    | '/privacy'
+    | '/refund'
     | '/story'
+    | '/terms'
     | '/visit'
     | '/auth/callback'
     | '/products/$slug'
@@ -154,7 +190,10 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   CollectionsRoute: typeof CollectionsRoute
   GalleryRoute: typeof GalleryRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundRoute: typeof RefundRoute
   StoryRoute: typeof StoryRoute
+  TermsRoute: typeof TermsRoute
   VisitRoute: typeof VisitRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
@@ -169,11 +208,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/story': {
       id: '/story'
       path: '/story'
       fullPath: '/story'
       preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -242,7 +302,10 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   CollectionsRoute: CollectionsRoute,
   GalleryRoute: GalleryRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundRoute: RefundRoute,
   StoryRoute: StoryRoute,
+  TermsRoute: TermsRoute,
   VisitRoute: VisitRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   ProductsSlugRoute: ProductsSlugRoute,
