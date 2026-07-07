@@ -74,8 +74,12 @@ function AdminConsole() {
     setWeight(product.weight || "");
     setIngredientsText(product.ingredients ? product.ingredients.join(", ") : "");
     setVariantsText(product.variants ? product.variants.join(", ") : "");
-    setImageFile(null);
-    setImagePreviewUrl(resolveProductImage(product.images[0]));
+    
+    const initialImages = (product.images || []).map((imgUrl: string, idx: number) => ({
+      id: `existing-${idx}-${Date.now()}`,
+      url: imgUrl,
+    }));
+    setImagesList(initialImages);
   };
 
   const handleCancelEdit = () => {
@@ -95,8 +99,7 @@ function AdminConsole() {
     setWeight("");
     setIngredientsText("");
     setVariantsText("");
-    setImageFile(null);
-    setImagePreviewUrl("");
+    setImagesList([]);
   };
 
   // New Product Fields
@@ -112,8 +115,7 @@ function AdminConsole() {
   const [weight, setWeight] = useState("");
   const [ingredientsText, setIngredientsText] = useState("");
   const [variantsText, setVariantsText] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [imagesList, setImagesList] = useState<{ id: string; url: string; file?: File }[]>([]);
 
   // Fetch Data Functions
   const fetchProducts = async () => {
@@ -180,12 +182,18 @@ function AdminConsole() {
     setProdId(`cc-${generatedSlug.substring(0, 15)}`);
   }, [name, showAddForm, editMode]);
 
-  const handleFileChange = (e: any) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
-    }
+  const handleFilesChange = (e: any) => {
+    const files = Array.from(e.target.files || []) as File[];
+    const newItems = files.map((file) => ({
+      id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setImagesList((prev) => [...prev, ...newItems]);
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setImagesList((prev) => prev.filter((item) => item.id !== id));
   };
 
   const handleAddProduct = async (e: FormEvent) => {
@@ -195,23 +203,27 @@ function AdminConsole() {
     setIsSubmitting(true);
 
     try {
-      let imageUrl = "dark.jpg"; // Default fallback
+      const finalUrls: string[] = [];
 
-      // 1. Upload image if provided
-      if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-        const { error: uploadErr } = await supabase.storage
-          .from("product-images")
-          .upload(fileName, imageFile);
+      // 1. Upload new images and construct list of URLs
+      for (const item of imagesList) {
+        if (item.file) {
+          const fileExt = item.file.name.split(".").pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+          const { error: uploadErr } = await supabase.storage
+            .from("product-images")
+            .upload(fileName, item.file);
 
-        if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+          if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(fileName);
+          const { data: { publicUrl } } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(fileName);
 
-        imageUrl = publicUrl;
+          finalUrls.push(publicUrl);
+        } else {
+          finalUrls.push(item.url);
+        }
       }
 
       // 2. Format inputs
@@ -247,13 +259,8 @@ function AdminConsole() {
           status,
           variants,
           ingredients,
+          images: finalUrls,
         };
-
-        if (imageFile) {
-          updateData.images = [imageUrl];
-        } else if (!imagePreviewUrl) {
-          updateData.images = [];
-        }
 
         const { data, error: dbErr } = await supabase
           .from("products")
@@ -279,7 +286,7 @@ function AdminConsole() {
             sale_price: finalSalePrice,
             stock_quantity: finalStock,
             featured,
-            images: imageFile ? [imageUrl] : [],
+            images: finalUrls,
             ingredients,
             weight,
             status,
@@ -597,37 +604,28 @@ function AdminConsole() {
 
                     {/* Image File Picker */}
                     <div className="block">
-                      <span className="text-[10px] uppercase tracking-[0.15em] text-accent">Product Image</span>
-                      {imagePreviewUrl ? (
-                        <div className="mt-1 relative h-32 w-full border border-border rounded-xl overflow-hidden group bg-muted/20 flex items-center justify-center">
-                          <img src={imagePreviewUrl} alt="Preview" className="h-full w-full object-cover" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-200">
-                            <label className="cursor-pointer p-2 bg-background/90 rounded-full hover:bg-background text-foreground transition-colors" title="Change photo">
-                              <Upload className="h-4 w-4" />
-                              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                            </label>
+                      <span className="text-[10px] uppercase tracking-[0.15em] text-accent block mb-2">Product Images</span>
+                      <div className="grid grid-cols-3 gap-3">
+                        {imagesList.map((item) => (
+                          <div key={item.id} className="relative aspect-square border border-border rounded-xl overflow-hidden group bg-muted/20 flex items-center justify-center">
+                            <img src={resolveProductImage(item.url)} alt="Product" className="h-full w-full object-cover" />
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                setImageFile(null);
-                                setImagePreviewUrl("");
-                              }}
-                              className="p-2 bg-destructive/90 rounded-full hover:bg-destructive text-destructive-foreground transition-colors"
+                              onClick={() => handleRemoveImage(item.id)}
+                              className="absolute top-1 right-1 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow hover:bg-destructive/95 transition-all opacity-0 group-hover:opacity-100"
                               title="Delete photo"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
-                        </div>
-                      ) : (
-                        <label className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-accent transition-all bg-background">
+                        ))}
+                        
+                        <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent transition-all bg-background min-h-[80px]">
                           <Upload className="h-5 w-5 text-muted-foreground mb-1" />
-                          <span className="text-xs text-muted-foreground">Upload Image File</span>
-                          <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                          <span className="text-[10px] text-muted-foreground text-center px-1">Add Photos</span>
+                          <input type="file" accept="image/*" multiple onChange={handleFilesChange} className="hidden" />
                         </label>
-                      )}
+                      </div>
                     </div>
 
                     <label className="flex items-center gap-3 cursor-pointer py-1">
