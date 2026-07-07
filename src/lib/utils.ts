@@ -22,7 +22,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function resolveProductImage(imagePath: string): string {
-  if (!imagePath) return "";
+  if (!imagePath) return localImages["dark.jpg"] || "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
     return imagePath;
   }

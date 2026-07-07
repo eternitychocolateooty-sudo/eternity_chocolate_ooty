@@ -232,7 +232,7 @@ function AdminConsole() {
       else if (finalStock < 10) status = "low-stock";
 
       // 3. Save or Update in database
-      let newProd;
+      let newProd: any;
       if (editMode && editProductId) {
         const updateData: any = {
           name,
@@ -251,6 +251,8 @@ function AdminConsole() {
 
         if (imageFile) {
           updateData.images = [imageUrl];
+        } else if (!imagePreviewUrl) {
+          updateData.images = [];
         }
 
         const { data, error: dbErr } = await supabase
@@ -277,7 +279,7 @@ function AdminConsole() {
             sale_price: finalSalePrice,
             stock_quantity: finalStock,
             featured,
-            images: [imageUrl],
+            images: imageFile ? [imageUrl] : [],
             ingredients,
             weight,
             status,
@@ -596,17 +598,36 @@ function AdminConsole() {
                     {/* Image File Picker */}
                     <div className="block">
                       <span className="text-[10px] uppercase tracking-[0.15em] text-accent">Product Image</span>
-                      <label className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-accent transition-all bg-background">
-                        {imagePreviewUrl ? (
-                          <img src={imagePreviewUrl} alt="Preview" className="h-20 w-20 object-cover rounded-lg" />
-                        ) : (
-                          <>
-                            <Upload className="h-5 w-5 text-muted-foreground mb-1" />
-                            <span className="text-xs text-muted-foreground">Upload Image File</span>
-                          </>
-                        )}
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      </label>
+                      {imagePreviewUrl ? (
+                        <div className="mt-1 relative h-32 w-full border border-border rounded-xl overflow-hidden group bg-muted/20 flex items-center justify-center">
+                          <img src={imagePreviewUrl} alt="Preview" className="h-full w-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-200">
+                            <label className="cursor-pointer p-2 bg-background/90 rounded-full hover:bg-background text-foreground transition-colors" title="Change photo">
+                              <Upload className="h-4 w-4" />
+                              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setImageFile(null);
+                                setImagePreviewUrl("");
+                              }}
+                              className="p-2 bg-destructive/90 rounded-full hover:bg-destructive text-destructive-foreground transition-colors"
+                              title="Delete photo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-accent transition-all bg-background">
+                          <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground">Upload Image File</span>
+                          <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        </label>
+                      )}
                     </div>
 
                     <label className="flex items-center gap-3 cursor-pointer py-1">
