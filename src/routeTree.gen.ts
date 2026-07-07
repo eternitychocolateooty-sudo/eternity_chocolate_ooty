@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VisitRouteImport } from './routes/visit'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoryRouteImport } from './routes/story'
+import { Route as ShippingRouteImport } from './routes/shipping'
 import { Route as RefundRouteImport } from './routes/refund'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -36,6 +37,11 @@ const TermsRoute = TermsRouteImport.update({
 const StoryRoute = StoryRouteImport.update({
   id: '/story',
   path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShippingRoute = ShippingRouteImport.update({
+  id: '/shipping',
+  path: '/shipping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RefundRoute = RefundRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/shipping': typeof ShippingRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/shipping': typeof ShippingRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/shipping': typeof ShippingRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/visit': typeof VisitRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/privacy'
     | '/refund'
+    | '/shipping'
     | '/story'
     | '/terms'
     | '/visit'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/privacy'
     | '/refund'
+    | '/shipping'
     | '/story'
     | '/terms'
     | '/visit'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/privacy'
     | '/refund'
+    | '/shipping'
     | '/story'
     | '/terms'
     | '/visit'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
+  ShippingRoute: typeof ShippingRoute
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
   VisitRoute: typeof VisitRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/story'
       fullPath: '/story'
       preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipping': {
+      id: '/shipping'
+      path: '/shipping'
+      fullPath: '/shipping'
+      preLoaderRoute: typeof ShippingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refund': {
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
+  ShippingRoute: ShippingRoute,
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
   VisitRoute: VisitRoute,

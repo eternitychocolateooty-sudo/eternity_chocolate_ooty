@@ -397,6 +397,7 @@ function Footer() {
             <Link to="/terms" className="hover:text-accent transition-colors">Terms & Conditions</Link>
             <Link to="/privacy" className="hover:text-accent transition-colors">Privacy Policy</Link>
             <Link to="/refund" className="hover:text-accent transition-colors">Refund & Cancellation</Link>
+            <Link to="/shipping" className="hover:text-accent transition-colors">Shipping Policy</Link>
           </div>
         </div>
       </div>
