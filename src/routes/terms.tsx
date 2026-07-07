@@ -22,79 +22,154 @@ function TermsAndConditions() {
         <h1 className="font-display text-5xl md:text-6xl text-balance max-w-3xl mx-auto">
           Terms & Conditions
         </h1>
-        <p className="mt-4 text-muted-foreground text-sm">Last Updated: July 2026</p>
       </section>
 
       {/* CONTENT */}
       <section className="container mx-auto px-6 max-w-3xl">
-        <div className="prose prose-invert max-w-none space-y-8 text-[oklch(0.94_0.02_80/0.8)] leading-relaxed">
+        <div className="prose prose-invert max-w-none space-y-8 text-[oklch(0.94_0.02_80/0.8)] leading-relaxed text-left">
           <p>
-            Welcome to <strong>ETERNITY</strong>. These Terms & Conditions govern your use of our
-            website, including any purchases made from our online boutique. By accessing or using our website, you agree to comply with and be bound by these terms.
+            Welcome to <strong>Eternity</strong>. By accessing or using our website, you agree to
+            comply with and be bound by the following Terms and Conditions. Please read them
+            carefully before using our services.
           </p>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">1. General Information</h2>
+            <h2 className="font-display text-2xl text-foreground mt-8">1. General</h2>
             <p>
-              This website is owned and operated by <strong>ETERNITY Artisan Chocolate Boutique</strong>,
-              located at No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001. All orders and purchases made through this website are subject to these Terms & Conditions.
+              These Terms & Conditions apply to all users of{" "}
+              <a
+                href="https://eternitychocolateooty.in/"
+                className="text-accent underline"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                https://eternitychocolateooty.in/
+              </a>{" "}
+              (referred to as “we,” “us,” or “our”).
+            </p>
+            <p>
+              By using this website, you agree to follow these terms. If you do not agree, please do
+              not use our website.
             </p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">2. Products & Pricing</h2>
-            <p>
-              We strive to represent our handcrafted artisan chocolates, spices, teas, and coffees as accurately as possible. However, because our chocolates are made in small batches, slight variations in appearance, weight, and packaging may occur.
-            </p>
-            <p>
-              All prices listed on our website are in Indian Rupees (INR) and are inclusive of applicable taxes unless stated otherwise. Shipping charges will be calculated and displayed during the checkout process. We reserve the right to change our prices at any time without prior notice.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">3. Orders & Payment</h2>
-            <p>
-              By placing an order, you make an offer to purchase the selected products under these terms. We reserve the right to accept or decline any order for any reason, including stock availability or issues with payment processing.
-            </p>
-            <p>
-              All payments must be made in full at the time of checkout. We use secure third-party payment gateways (such as Paytm PG/Cashfree) to process transactions. We do not store or have access to your raw credit/debit card details or authentication credentials.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">4. Shipping & Delivery</h2>
-            <p>
-              We ship our products across India. We pack our handcrafted chocolates carefully using temperature-insulated materials to prevent melting during transit. However, we are not liable for transit delays caused by courier services, weather conditions, or incorrect shipping addresses provided by the customer.
-            </p>
-            <p>
-              Delivery timelines are estimates and not guaranteed. If a package arrives damaged, please document the damage (photos/videos) and contact us immediately within 24 hours of delivery.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">5. Intellectual Property</h2>
-            <p>
-              All content on this website, including text, images, logos, graphics, and software, is the property of ETERNITY and is protected by Indian and international copyright laws. You may not reproduce, distribute, or display any content from this site without our express written permission.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">6. Governing Law</h2>
-            <p>
-              These Terms & Conditions and any transactions executed through this website are governed by the laws of India. Any disputes arising out of or in connection with these terms shall be subject to the exclusive jurisdiction of the courts in Ooty, Tamil Nadu.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">7. Contact Information</h2>
-            <p>
-              If you have any questions, feedback, or concerns regarding these Terms & Conditions, please reach out to us at:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm">
-              <li><strong>Email:</strong> eternitychocolateooty@gmail.com</li>
-              <li><strong>Phone:</strong> 084894 62100</li>
-              <li><strong>Address:</strong> No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001</li>
+            <h2 className="font-display text-2xl text-foreground mt-8">2. Products and Services</h2>
+            <p>We strive to display our products as accurately as possible. However:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>All products are subject to availability.</li>
+              <li>
+                We reserve the right to modify, update, or discontinue any product at any time
+                without prior notice.
+              </li>
             </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">3. Pricing</h2>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>All prices are listed in Indian Rupees (INR).</li>
+              <li>Prices are inclusive of applicable taxes unless stated otherwise.</li>
+              <li>
+                We reserve the right to change pricing, discounts, or offers at any time without
+                prior notice.
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">4. Orders</h2>
+            <p>Once you place an order, you will receive an order confirmation email.</p>
+            <p>
+              This email is only an acknowledgment and does not guarantee acceptance of the order.
+            </p>
+            <p>We reserve the right to cancel or refuse any order due to:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>unavailability</li>
+              <li>Pricing errors</li>
+              <li>Suspicious or fraudulent activity</li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">5. Payment</h2>
+            <p>We accept multiple payment methods, including:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Credit/Debit Cards</li>
+              <li>UPI</li>
+              <li>Net Banking</li>
+              <li>Cash on Delivery (COD) (if available)</li>
+            </ul>
+            <p>Additional charges may apply for COD orders.</p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">7. Returns and Refunds</h2>
+            <p>
+              Please refer to our Return & Refund Policy page for complete details regarding
+              eligibility, process, and timelines.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">8. Use of Website</h2>
+            <p>You agree not to misuse the website. Prohibited activities include:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Hacking or unauthorized access</li>
+              <li>Spreading malware or viruses</li>
+              <li>Spamming or fraudulent activity</li>
+            </ul>
+            <p>Violation may result in termination of access and legal action.</p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">9. Intellectual Property</h2>
+            <p>All content on this website, including:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Logos</li>
+              <li>Images</li>
+              <li>Product designs</li>
+              <li>Text and graphics</li>
+            </ul>
+            <p>
+              are the property of <strong>MANOHAR VINOTH YAVANARAJ</strong> and are protected under
+              applicable copyright laws.
+            </p>
+            <p>Unauthorized use or reproduction is strictly prohibited.</p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">10. Privacy Policy</h2>
+            <p>
+              Your use of this website is also governed by our Privacy Policy, which explains how we
+              collect and use your information.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">11. Limitation of Liability</h2>
+            <p>Eternity shall not be held liable for any:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Direct or indirect damages</li>
+              <li>Loss of data or profits</li>
+              <li>Issues arising from the use or inability to use our website or products</li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="font-display text-2xl text-foreground mt-8">12. Governing Law</h2>
+            <p>
+              These Terms & Conditions are governed by the laws of India. Any disputes shall be
+              subject to the jurisdiction of courts in Tamil Nadu, India.
+            </p>
+          </div>
+
+          <div className="space-y-4 border-t border-border pt-8 mt-12">
+            <h3 className="font-display text-xl text-foreground">Acceptance of Terms</h3>
+            <p>
+              By using our website, you confirm that you have read, understood, and agreed to these
+              Terms & Conditions.
+            </p>
           </div>
         </div>
       </section>
