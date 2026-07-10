@@ -66,14 +66,38 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+function setupRuntimeEnv(env: unknown) {
+  if (env && typeof env === "object") {
+    const g = globalThis as any;
+    const mergedEnv = { ...g.process?.env, ...env };
+    try {
+      g.process = g.process || {};
+      g.process.env = mergedEnv;
+    } catch (e) {
+      try {
+        Object.defineProperty(g.process, "env", {
+          value: mergedEnv,
+          writable: true,
+          configurable: true,
+        });
+      } catch (e2) {
+        try {
+          Object.defineProperty(g, "process", {
+            value: { env: mergedEnv },
+            writable: true,
+            configurable: true,
+          });
+        } catch (e3) {
+          console.error("Critical: Could not bind environment variables", e3);
+        }
+      }
+    }
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    if (env && typeof env === "object") {
-      // Bind Cloudflare environment variables to process.env at runtime
-      globalThis.process = globalThis.process || {};
-      process.env = process.env || {};
-      Object.assign(process.env, env);
-    }
+    setupRuntimeEnv(env);
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
