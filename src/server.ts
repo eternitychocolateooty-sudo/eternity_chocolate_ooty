@@ -68,30 +68,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 function setupRuntimeEnv(env: unknown) {
   if (env && typeof env === "object") {
-    const g = globalThis as any;
-    const mergedEnv = { ...g.process?.env, ...env };
-    try {
-      g.process = g.process || {};
-      g.process.env = mergedEnv;
-    } catch (e) {
-      try {
-        Object.defineProperty(g.process, "env", {
-          value: mergedEnv,
-          writable: true,
-          configurable: true,
-        });
-      } catch (e2) {
-        try {
-          Object.defineProperty(g, "process", {
-            value: { env: mergedEnv },
-            writable: true,
-            configurable: true,
-          });
-        } catch (e3) {
-          console.error("Critical: Could not bind environment variables", e3);
-        }
-      }
-    }
+    (globalThis as any).__CLOUDFLARE_ENV__ = env;
   }
 }
 

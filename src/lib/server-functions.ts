@@ -1,56 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 
-async function ensureRuntimeEnv() {
-  let env: any = null;
-  
-  // 1. Try Cloudflare Workers standard API
-  try {
-    const cfModule = "cloudflare:workers";
-    const cf = await import(/* @vite-ignore */ cfModule);
-    if (cf?.env) {
-      env = cf.env;
-    }
-  } catch (e) {
-    // Not running on Cloudflare Workers or older version
-  }
+function getEnvVar(name: string): string {
+  return (
+    (globalThis as any).__CLOUDFLARE_ENV__?.[name] ||
+    (typeof process !== "undefined" && process["env"]?.[name]) ||
+    ""
+  );
+}
 
-  // 2. Fallback to H3 context
-  if (!env) {
+async function ensureRuntimeEnv() {
+  if (!(globalThis as any).__CLOUDFLARE_ENV__) {
     try {
       const importPath = "vinxi/http";
       const { getEvent } = await import(/* @vite-ignore */ importPath);
       const event = getEvent();
-      env = event?.context?.cloudflare?.env;
+      const env = event?.context?.cloudflare?.env;
+      if (env && typeof env === "object") {
+        (globalThis as any).__CLOUDFLARE_ENV__ = env;
+      }
     } catch (e) {
       // Fallback
-    }
-  }
-
-  if (env && typeof env === "object") {
-    const g = globalThis as any;
-    const mergedEnv = { ...g.process?.env, ...env };
-    try {
-      g.process = g.process || {};
-      g.process.env = mergedEnv;
-    } catch (e) {
-      try {
-        Object.defineProperty(g.process, "env", {
-          value: mergedEnv,
-          writable: true,
-          configurable: true,
-        });
-      } catch (e2) {
-        try {
-          Object.defineProperty(g, "process", {
-            value: { env: mergedEnv },
-            writable: true,
-            configurable: true,
-          });
-        } catch (e3) {
-          console.error("Critical: Could not bind environment variables", e3);
-        }
-      }
     }
   }
 }
@@ -167,8 +137,8 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   }
 
   // A. Send confirmation email using Resend
-  const resendApiKey = process["env"]?.["RESEND_API_KEY"];
-  const ownerEmail = process["env"]?.["ADMIN_EMAIL"] || "eternitychocolateooty@gmail.com";
+  const resendApiKey = getEnvVar("RESEND_API_KEY");
+  const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
 
   if (resendApiKey) {
     try {
@@ -310,9 +280,9 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   }
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
-  const waToken = process["env"]?.["META_WHATSAPP_TOKEN"];
-  const waPhoneId = process["env"]?.["META_WHATSAPP_PHONE_NUMBER_ID"];
-  const ownerPhone = process["env"]?.["OWNER_WHATSAPP_NUMBER"];
+  const waToken = getEnvVar("META_WHATSAPP_TOKEN");
+  const waPhoneId = getEnvVar("META_WHATSAPP_PHONE_NUMBER_ID");
+  const ownerPhone = getEnvVar("OWNER_WHATSAPP_NUMBER");
 
   if (waToken && waPhoneId) {
     const baseWhatsAppUrl = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
@@ -397,10 +367,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     await ensureRuntimeEnv();
     const { items, customerInfo, shippingAddress } = payload;
     console.log("Server: createCheckoutOrder env check:", {
-      hasServiceKey: !!process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"],
-      serviceKeyLength: process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]?.length || 0,
-      hasAnonKey: !!process["env"]?.["VITE_SUPABASE_ANON_KEY"],
-      hasResendKey: !!process["env"]?.["RESEND_API_KEY"],
+      hasServiceKey: !!getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
+      serviceKeyLength: getEnvVar("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
+      hasAnonKey: !!getEnvVar("VITE_SUPABASE_ANON_KEY"),
+      hasResendKey: !!getEnvVar("RESEND_API_KEY"),
     });
     console.log("Server: createCheckoutOrder payload received", { itemsCount: items?.length, customerInfo });
 
@@ -444,9 +414,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const appId = process["env"]?.["VITE_CASHFREE_APP_ID"];
-    const secretKey = process["env"]?.["CASHFREE_SECRET_KEY"];
-    const cashfreeEnv = process["env"]?.["VITE_CASHFREE_ENV"] || "TEST";
+    const appId = getEnvVar("VITE_CASHFREE_APP_ID");
+    const secretKey = getEnvVar("CASHFREE_SECRET_KEY");
+    const cashfreeEnv = getEnvVar("VITE_CASHFREE_ENV") || "TEST";
 
     let cashfreeOrderId = `CF-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let paymentSessionId = "";
@@ -459,7 +429,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     } else {
       try {
         const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-        const returnUrl = `${process["env"]?.["VITE_SITE_URL"] || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
+        const returnUrl = `${getEnvVar("VITE_SITE_URL") || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
 
         const response = await fetch(`https://${host}/pg/orders`, {
           method: "POST",
@@ -522,10 +492,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 
     if (orderErr || !order) {
       const diag = {
-        hasServiceKey: !!process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"],
-        serviceKeyLength: process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]?.length || 0,
-        hasAnonKey: !!process["env"]?.["VITE_SUPABASE_ANON_KEY"],
-        hasResendKey: !!process["env"]?.["RESEND_API_KEY"],
+        hasServiceKey: !!getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
+        serviceKeyLength: getEnvVar("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
+        hasAnonKey: !!getEnvVar("VITE_SUPABASE_ANON_KEY"),
+        hasResendKey: !!getEnvVar("RESEND_API_KEY"),
       };
       throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"} (Diag: ${JSON.stringify(diag)})`);
     }
@@ -578,9 +548,9 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
-    const appId = process["env"]?.["VITE_CASHFREE_APP_ID"];
-    const secretKey = process["env"]?.["CASHFREE_SECRET_KEY"];
-    const cashfreeEnv = process["env"]?.["VITE_CASHFREE_ENV"] || "TEST";
+    const appId = getEnvVar("VITE_CASHFREE_APP_ID");
+    const secretKey = getEnvVar("CASHFREE_SECRET_KEY");
+    const cashfreeEnv = getEnvVar("VITE_CASHFREE_ENV") || "TEST";
 
     if (!appId || !secretKey) {
       throw new Error("Cashfree API key configuration is missing on the server.");
@@ -650,8 +620,8 @@ export const submitFeedback = createServerFn({ method: "POST" })
     }
 
     // Trigger Resend email notification to owner
-    const resendApiKey = process["env"]?.["RESEND_API_KEY"];
-    const ownerEmail = process["env"]?.["ADMIN_EMAIL"] || "eternitychocolateooty@gmail.com"; // Owner email
+    const resendApiKey = getEnvVar("RESEND_API_KEY");
+    const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com"; // Owner email
 
     if (resendApiKey) {
       try {
