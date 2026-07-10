@@ -2,39 +2,56 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 
 async function ensureRuntimeEnv() {
+  let env: any = null;
+  
+  // 1. Try Cloudflare Workers standard API
   try {
-    const importPath = "vinxi/http";
-    const { getEvent } = await import(/* @vite-ignore */ importPath);
-    const event = getEvent();
-    const env = event?.context?.cloudflare?.env;
-    if (env && typeof env === "object") {
-      const g = globalThis as any;
-      const mergedEnv = { ...g.process?.env, ...env };
+    const cfModule = "cloudflare:workers";
+    const cf = await import(/* @vite-ignore */ cfModule);
+    if (cf?.env) {
+      env = cf.env;
+    }
+  } catch (e) {
+    // Not running on Cloudflare Workers or older version
+  }
+
+  // 2. Fallback to H3 context
+  if (!env) {
+    try {
+      const importPath = "vinxi/http";
+      const { getEvent } = await import(/* @vite-ignore */ importPath);
+      const event = getEvent();
+      env = event?.context?.cloudflare?.env;
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  if (env && typeof env === "object") {
+    const g = globalThis as any;
+    const mergedEnv = { ...g.process?.env, ...env };
+    try {
+      g.process = g.process || {};
+      g.process.env = mergedEnv;
+    } catch (e) {
       try {
-        g.process = g.process || {};
-        g.process.env = mergedEnv;
-      } catch (e) {
+        Object.defineProperty(g.process, "env", {
+          value: mergedEnv,
+          writable: true,
+          configurable: true,
+        });
+      } catch (e2) {
         try {
-          Object.defineProperty(g.process, "env", {
-            value: mergedEnv,
+          Object.defineProperty(g, "process", {
+            value: { env: mergedEnv },
             writable: true,
             configurable: true,
           });
-        } catch (e2) {
-          try {
-            Object.defineProperty(g, "process", {
-              value: { env: mergedEnv },
-              writable: true,
-              configurable: true,
-            });
-          } catch (e3) {
-            console.error("Critical: Could not bind environment variables", e3);
-          }
+        } catch (e3) {
+          console.error("Critical: Could not bind environment variables", e3);
         }
       }
     }
-  } catch (e) {
-    // Fallback if not in active H3 context
   }
 }
 
