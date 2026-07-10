@@ -1,6 +1,43 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 
+async function ensureRuntimeEnv() {
+  try {
+    const importPath = "vinxi/http";
+    const { getEvent } = await import(/* @vite-ignore */ importPath);
+    const event = getEvent();
+    const env = event?.context?.cloudflare?.env;
+    if (env && typeof env === "object") {
+      const g = globalThis as any;
+      const mergedEnv = { ...g.process?.env, ...env };
+      try {
+        g.process = g.process || {};
+        g.process.env = mergedEnv;
+      } catch (e) {
+        try {
+          Object.defineProperty(g.process, "env", {
+            value: mergedEnv,
+            writable: true,
+            configurable: true,
+          });
+        } catch (e2) {
+          try {
+            Object.defineProperty(g, "process", {
+              value: { env: mergedEnv },
+              writable: true,
+              configurable: true,
+            });
+          } catch (e3) {
+            console.error("Critical: Could not bind environment variables", e3);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Fallback if not in active H3 context
+  }
+}
+
 // Types
 export interface CheckoutItem {
   productId: string;
@@ -36,6 +73,7 @@ export interface ShippingAddress {
 
 // SHARED HELPER FUNCTION TO COMPLETE AND PROMPT ORDER FULFILLMENT
 export async function completeOrder(orderId: string, cashfreePaymentId: string) {
+  await ensureRuntimeEnv();
   // 1. Mark order as paid
   const { data: order, error: updateErr } = await supabaseAdmin
     .from("orders")
@@ -339,6 +377,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 // 1. ORDER INITIALIZATION
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
+    await ensureRuntimeEnv();
     const { items, customerInfo, shippingAddress } = payload;
     console.log("Server: createCheckoutOrder env check:", {
       hasServiceKey: !!process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"],
@@ -507,6 +546,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 // 2. PAYMENT STATUS VERIFICATION (Used for both live API checking and local simulation sandbox)
 export const verifyCheckoutPayment = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
+    await ensureRuntimeEnv();
     const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = payload;
 
     if (isMock) {
@@ -572,6 +612,7 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
 // 3. SUBMIT FEEDBACK
 export const submitFeedback = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
+    await ensureRuntimeEnv();
     const { name, email, rating, message } = payload;
 
     // Record feedback in database
