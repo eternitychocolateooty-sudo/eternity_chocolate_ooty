@@ -112,8 +112,8 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   }
 
   // A. Send confirmation email using Resend
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const ownerEmail = process.env.ADMIN_EMAIL || "eternitychocolateooty@gmail.com";
+  const resendApiKey = process["env"]?.["RESEND_API_KEY"];
+  const ownerEmail = process["env"]?.["ADMIN_EMAIL"] || "eternitychocolateooty@gmail.com";
 
   if (resendApiKey) {
     try {
@@ -255,9 +255,9 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   }
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
-  const waToken = process.env.META_WHATSAPP_TOKEN;
-  const waPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
-  const ownerPhone = process.env.OWNER_WHATSAPP_NUMBER;
+  const waToken = process["env"]?.["META_WHATSAPP_TOKEN"];
+  const waPhoneId = process["env"]?.["META_WHATSAPP_PHONE_NUMBER_ID"];
+  const ownerPhone = process["env"]?.["OWNER_WHATSAPP_NUMBER"];
 
   if (waToken && waPhoneId) {
     const baseWhatsAppUrl = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
@@ -340,6 +340,12 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
     const { items, customerInfo, shippingAddress } = payload;
+    console.log("Server: createCheckoutOrder env check:", {
+      hasServiceKey: !!process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"],
+      serviceKeyLength: process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]?.length || 0,
+      hasAnonKey: !!process["env"]?.["VITE_SUPABASE_ANON_KEY"],
+      hasResendKey: !!process["env"]?.["RESEND_API_KEY"],
+    });
     console.log("Server: createCheckoutOrder payload received", { itemsCount: items?.length, customerInfo });
 
     // Fetch actual prices from Supabase
@@ -382,9 +388,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const appId = process.env.VITE_CASHFREE_APP_ID;
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
+    const appId = process["env"]?.["VITE_CASHFREE_APP_ID"];
+    const secretKey = process["env"]?.["CASHFREE_SECRET_KEY"];
+    const cashfreeEnv = process["env"]?.["VITE_CASHFREE_ENV"] || "TEST";
 
     let cashfreeOrderId = `CF-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let paymentSessionId = "";
@@ -397,7 +403,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     } else {
       try {
         const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-        const returnUrl = `${process.env.VITE_SITE_URL || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
+        const returnUrl = `${process["env"]?.["VITE_SITE_URL"] || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
 
         const response = await fetch(`https://${host}/pg/orders`, {
           method: "POST",
@@ -509,9 +515,9 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
-    const appId = process.env.VITE_CASHFREE_APP_ID;
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
+    const appId = process["env"]?.["VITE_CASHFREE_APP_ID"];
+    const secretKey = process["env"]?.["CASHFREE_SECRET_KEY"];
+    const cashfreeEnv = process["env"]?.["VITE_CASHFREE_ENV"] || "TEST";
 
     if (!appId || !secretKey) {
       throw new Error("Cashfree API key configuration is missing on the server.");
@@ -580,8 +586,8 @@ export const submitFeedback = createServerFn({ method: "POST" })
     }
 
     // Trigger Resend email notification to owner
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const ownerEmail = process.env.ADMIN_EMAIL || "eternitychocolateooty@gmail.com"; // Owner email
+    const resendApiKey = process["env"]?.["RESEND_API_KEY"];
+    const ownerEmail = process["env"]?.["ADMIN_EMAIL"] || "eternitychocolateooty@gmail.com"; // Owner email
 
     if (resendApiKey) {
       try {

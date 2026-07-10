@@ -12,7 +12,7 @@ const supabaseAnonKey =
   "";
 
 const supabaseServiceRoleKey = 
-  (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) || 
+  (typeof process !== "undefined" && process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]) || 
   "";
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -30,7 +30,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Admin client proxy to dynamically resolve service key at runtime
 export const supabaseAdmin = new Proxy({}, {
   get(target, prop, receiver) {
-    const serviceKey = (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) || "";
+    const serviceKey = (typeof process !== "undefined" && process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]) || "";
     const client = serviceKey
       ? createClient(supabaseUrl, serviceKey, {
           auth: {
