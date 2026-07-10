@@ -504,7 +504,13 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     console.log("Server: Pending order insert result", { orderId: order?.id, error: orderErr });
 
     if (orderErr || !order) {
-      throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"}`);
+      const diag = {
+        hasServiceKey: !!process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"],
+        serviceKeyLength: process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]?.length || 0,
+        hasAnonKey: !!process["env"]?.["VITE_SUPABASE_ANON_KEY"],
+        hasResendKey: !!process["env"]?.["RESEND_API_KEY"],
+      };
+      throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"} (Diag: ${JSON.stringify(diag)})`);
     }
 
     // Write order items
