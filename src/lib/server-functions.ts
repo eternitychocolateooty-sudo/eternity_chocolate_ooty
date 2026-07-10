@@ -115,61 +115,140 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   const resendApiKey = process.env.RESEND_API_KEY;
   const ownerEmail = process.env.ADMIN_EMAIL || "eternitychocolateooty@gmail.com";
 
-  if (resendApiKey && emailToUse) {
+  if (resendApiKey) {
     try {
       const { Resend } = await import("resend");
       const resendClient = new Resend(resendApiKey);
 
       const itemsSummaryHtml = orderItems
         ? orderItems
-            .map(
-              (item) =>
-                `<tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.products?.name || "Artisan Chocolate"}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
-                </tr>`
-            )
+            .map((item) => {
+              const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : "";
+              return `<tr>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; color: #5D4037; text-align: left;">
+                  <strong>${item.products?.name || "Artisan Chocolate"}</strong>${variantSuffix}
+                </td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${item.quantity}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${item.price}</td>
+              </tr>`;
+            })
             .join("")
         : "";
 
-      await resendClient.emails.send({
-        from: "ETERNITY Boutique <onboarding@resend.dev>",
-        to: emailToUse,
-        subject: `Your ETERNITY Chocolate Order #${orderId.slice(0, 8).toUpperCase()} is Confirmed!`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #FAF6F0;">
-            <h2 style="color: #6D4C41; font-family: serif; border-bottom: 2px solid #8D6E63; padding-bottom: 10px;">ETERNITY</h2>
-            <p>Dear ${nameToUse},</p>
-            <p>Thank you for placing your order with ETERNITY. We are preparing your box of handcrafted chocolates from the misty hills of Ooty.</p>
-            
-            <h3 style="color: #8D6E63;">Order Summary</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-              <thead>
-                <tr style="background-color: #EFEBE9;">
-                  <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left;">Item</th>
-                  <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: center;">Quantity</th>
-                  <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: right;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsSummaryHtml}
-              </tbody>
-            </table>
+      // Parse shipping address
+      const addr = (typeof order.shipping_address === "string"
+        ? JSON.parse(order.shipping_address)
+        : order.shipping_address) as ShippingAddress;
 
-            <div style="margin-top: 15px; text-align: right; font-weight: bold; color: #5D4037;">
-              Subtotal: ₹${order.subtotal}<br/>
-              Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
-              <span style="font-size: 1.2em;">Total: ₹${order.total}</span>
-            </div>
+      const shippingAddressHtml = addr
+        ? `<div style="background-color: #FAF6F0; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-top: 20px;">
+            <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Delivery Address</h4>
+            <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
+              <strong>${addr.firstName} ${addr.lastName}</strong><br/>
+              ${addr.address}<br/>
+              ${addr.city}, ${addr.state} - ${addr.pincode}
+            </p>
+          </div>`
+        : "";
 
-            <div style="margin-top: 25px; font-size: 0.85em; color: #8D6E63; text-align: center; border-top: 1px solid #ddd; padding-top: 15px;">
-              <strong>ETERNITY Artisan Chocolate Boutique</strong><br/>
-              No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001
+      // Send to customer
+      if (emailToUse) {
+        await resendClient.emails.send({
+          from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
+          to: emailToUse,
+          subject: `Your ETERNITY Chocolate Order #${orderId.slice(0, 8).toUpperCase()} is Confirmed!`,
+          html: `
+            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EFEBE9; border-radius: 16px; background-color: #FFFFFF;">
+              <div style="text-align: center; margin-bottom: 24px; border-bottom: 2px solid #EFEBE9; padding-bottom: 16px;">
+                <h1 style="color: #4E342E; font-family: 'Playfair Display', Georgia, serif; margin: 0; font-size: 2.2em; letter-spacing: 0.05em; font-weight: normal;">ETERNITY</h1>
+                <p style="color: #8D6E63; margin: 4px 0 0 0; font-size: 0.85em; letter-spacing: 0.2em; text-transform: uppercase;">Artisan Chocolatier</p>
+              </div>
+              
+              <h2 style="color: #4E342E; font-family: serif; font-size: 1.4em; font-weight: normal; margin-top: 0; margin-bottom: 12px;">Order Confirmed</h2>
+              <p style="color: #5D4037; line-height: 1.6; font-size: 0.95em;">Dear ${nameToUse},</p>
+              <p style="color: #5D4037; line-height: 1.6; font-size: 0.95em;">Thank you for placing your order with ETERNITY. We are preparing your box of handcrafted chocolates from the misty hills of Ooty. Your payment has been verified, and we will update you as soon as your package ships.</p>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="color: #6D4C41; font-family: serif; border-bottom: 1px solid #EFEBE9; padding-bottom: 8px; margin-bottom: 12px; font-size: 1.1em; font-weight: bold;">Order Summary</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                  <thead>
+                    <tr style="background-color: #FAF6F0; border-bottom: 1px solid #EFEBE9;">
+                      <th style="padding: 10px 8px; text-align: left; color: #4E342E; font-size: 0.9em;">Item</th>
+                      <th style="padding: 10px 8px; text-align: center; color: #4E342E; font-size: 0.9em; width: 60px;">Qty</th>
+                      <th style="padding: 10px 8px; text-align: right; color: #4E342E; font-size: 0.9em; width: 80px;">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemsSummaryHtml}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="margin-top: 16px; text-align: right; line-height: 1.8; color: #5D4037; font-size: 0.95em; border-bottom: 1px solid #EFEBE9; padding-bottom: 16px;">
+                Subtotal: <span style="font-weight: 500;">₹${order.subtotal}</span><br/>
+                Shipping: <span style="font-weight: 500;">${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}</span><br/>
+                <span style="font-size: 1.25em; font-weight: bold; color: #4E342E; display: inline-block; margin-top: 8px;">Total Paid: ₹${order.total}</span>
+              </div>
+
+              ${shippingAddressHtml}
+
+              <div style="margin-top: 32px; font-size: 0.8em; color: #8D6E63; text-align: center; border-top: 1px solid #EFEBE9; padding-top: 20px; line-height: 1.6;">
+                <strong>ETERNITY Artisan Chocolate Boutique</strong><br/>
+                No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001<br/>
+                Need help? Reply to this email or contact support.
+              </div>
             </div>
-          </div>
-        `,
-      });
+          `,
+        });
+      }
+
+      // Send alert to Store Owner
+      if (ownerEmail) {
+        await resendClient.emails.send({
+          from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
+          to: ownerEmail,
+          subject: `NEW ORDER: Order #${orderId.slice(0, 8).toUpperCase()} - ₹${order.total}`,
+          html: `
+            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EFEBE9; border-radius: 16px; background-color: #FAF6F0;">
+              <h2 style="color: #4E342E; font-family: serif; font-size: 1.5em; border-bottom: 2px solid #8D6E63; padding-bottom: 10px; margin-top: 0;">New Paid Order Received!</h2>
+              <p style="color: #5D4037; font-size: 0.95em;">A new order has been paid and is ready for fulfillment.</p>
+              
+              <div style="background-color: #FFFFFF; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Customer Details</h4>
+                <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
+                  <strong>Name:</strong> ${nameToUse}<br/>
+                  <strong>Email:</strong> ${emailToUse || "N/A"}<br/>
+                  <strong>Phone:</strong> ${customerPhone || "N/A"}<br/>
+                  <strong>Order ID:</strong> ${orderId}<br/>
+                  <strong>Cashfree Payment ID:</strong> ${cashfreePaymentId}
+                </p>
+              </div>
+
+              ${shippingAddressHtml ? shippingAddressHtml.replace(/#FAF6F0/g, "#FFFFFF") : ""}
+
+              <h3 style="color: #6D4C41; font-family: serif; margin-top: 24px; margin-bottom: 8px;">Order Details</h3>
+              <table style="width: 100%; border-collapse: collapse; background-color: #FFFFFF; border: 1px solid #EFEBE9; border-radius: 8px; overflow: hidden;">
+                <thead>
+                  <tr style="background-color: #EFEBE9; border-bottom: 1px solid #EFEBE9;">
+                    <th style="padding: 10px 8px; text-align: left; color: #4E342E; font-size: 0.9em;">Item</th>
+                    <th style="padding: 10px 8px; text-align: center; color: #4E342E; font-size: 0.9em; width: 60px;">Qty</th>
+                    <th style="padding: 10px 8px; text-align: right; color: #4E342E; font-size: 0.9em; width: 80px;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsSummaryHtml}
+                </tbody>
+              </table>
+
+              <div style="margin-top: 15px; text-align: right; line-height: 1.8; color: #4E342E; font-size: 1em; font-weight: bold;">
+                Subtotal: ₹${order.subtotal}<br/>
+                Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
+                <span style="font-size: 1.2em;">Total Paid: ₹${order.total}</span>
+              </div>
+            </div>
+          `,
+        });
+      }
     } catch (emailErr) {
       console.error("Resend email delivery failed:", emailErr);
     }
@@ -186,7 +265,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     // Alert Owner
     if (ownerPhone) {
       try {
-        await fetch(baseWhatsAppUrl, {
+        const response = await fetch(baseWhatsAppUrl, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${waToken}`,
@@ -212,6 +291,8 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
             },
           }),
         });
+        const resData = await response.json();
+        console.log("Server: WhatsApp owner alert response status:", response.status, resData);
       } catch (waErr) {
         console.error("WhatsApp owner notification failed:", waErr);
       }
@@ -220,7 +301,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     // Alert Customer
     if (customerPhone) {
       try {
-        await fetch(baseWhatsAppUrl, {
+        const response = await fetch(baseWhatsAppUrl, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${waToken}`,
@@ -246,6 +327,8 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
             },
           }),
         });
+        const resData = await response.json();
+        console.log("Server: WhatsApp customer alert response status:", response.status, resData);
       } catch (waErr) {
         console.error("WhatsApp customer notification failed:", waErr);
       }
@@ -254,21 +337,20 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 }
 
 // 1. ORDER INITIALIZATION
-export const createCheckoutOrder = createServerFn(
-  { method: "POST" },
-  async (payload: {
-    items: CheckoutItem[];
-    customerInfo: CustomerInfo;
-    shippingAddress: ShippingAddress;
-  }) => {
+export const createCheckoutOrder = createServerFn({ method: "POST" })
+  .handler(async ({ data: payload }) => {
     const { items, customerInfo, shippingAddress } = payload;
+    console.log("Server: createCheckoutOrder payload received", { itemsCount: items?.length, customerInfo });
 
     // Fetch actual prices from Supabase
     const productIds = items.map((i) => i.productId);
+    console.log("Server: Fetching products from Supabase", productIds);
     const { data: dbProducts, error: fetchErr } = await supabaseAdmin
       .from("products")
       .select("*")
       .in("id", productIds);
+
+    console.log("Server: Supabase products fetched", { count: dbProducts?.length, error: fetchErr });
 
     if (fetchErr || !dbProducts) {
       throw new Error(`Failed to retrieve product data: ${fetchErr?.message || "Unknown error"}`);
@@ -308,8 +390,8 @@ export const createCheckoutOrder = createServerFn(
     let paymentSessionId = "";
     let isMock = false;
 
-    if (!appId || !secretKey) {
-      console.warn("Cashfree API credentials missing. Initiating MOCK payment order.");
+    if (!appId || !secretKey || appId === "your-cashfree-app-id" || secretKey === "your-cashfree-secret-key") {
+      console.warn("Cashfree API credentials missing or placeholder. Initiating MOCK payment order.");
       paymentSessionId = `mock_session_${Math.random().toString(36).substring(2, 15)}`;
       isMock = true;
     } else {
@@ -354,6 +436,7 @@ export const createCheckoutOrder = createServerFn(
     }
 
     // Write pending order details to database
+    console.log("Server: Inserting pending order into Supabase...");
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -372,6 +455,8 @@ export const createCheckoutOrder = createServerFn(
       })
       .select()
       .single();
+
+    console.log("Server: Pending order insert result", { orderId: order?.id, error: orderErr });
 
     if (orderErr || !order) {
       throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"}`);
@@ -411,18 +496,11 @@ export const createCheckoutOrder = createServerFn(
       amount: total.toFixed(2),
       isMock,
     };
-  }
-);
+  });
 
 // 2. PAYMENT STATUS VERIFICATION (Used for both live API checking and local simulation sandbox)
-export const verifyCheckoutPayment = createServerFn(
-  { method: "POST" },
-  async (payload: {
-    orderId?: string;
-    cashfreeOrderId: string;
-    cashfreePaymentId?: string;
-    isMock: boolean;
-  }) => {
+export const verifyCheckoutPayment = createServerFn({ method: "POST" })
+  .handler(async ({ data: payload }) => {
     const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = payload;
 
     if (isMock) {
@@ -483,13 +561,11 @@ export const verifyCheckoutPayment = createServerFn(
       console.error("Cashfree verification error:", err);
       throw new Error(err.message);
     }
-  }
-);
+  });
 
 // 3. SUBMIT FEEDBACK
-export const submitFeedback = createServerFn(
-  { method: "POST" },
-  async (payload: { name: string; email: string; rating: number; message: string }) => {
+export const submitFeedback = createServerFn({ method: "POST" })
+  .handler(async ({ data: payload }) => {
     const { name, email, rating, message } = payload;
 
     // Record feedback in database
@@ -513,7 +589,7 @@ export const submitFeedback = createServerFn(
         const resendClient = new Resend(resendApiKey);
 
         await resendClient.emails.send({
-          from: "ETERNITY Feedback System <onboarding@resend.dev>",
+          from: "ETERNITY Feedback System <feedback@eternitychocolateooty.in>",
           to: ownerEmail,
           subject: `New Customer Feedback: ${rating} Stars from ${name}`,
           html: `
@@ -538,5 +614,4 @@ export const submitFeedback = createServerFn(
     }
 
     return { success: true };
-  }
-);
+  });

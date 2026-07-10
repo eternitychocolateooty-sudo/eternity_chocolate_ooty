@@ -94,8 +94,10 @@ function Checkout() {
         setIsProcessing(true);
         try {
           const verifyRes = await verifyCheckoutPayment({
-            cashfreeOrderId: queryOrderId,
-            isMock: false
+            data: {
+              cashfreeOrderId: queryOrderId,
+              isMock: false
+            }
           });
           if (verifyRes.success) {
             await cart.clearCart();
@@ -158,33 +160,47 @@ function Checkout() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isProcessing) return;
+    console.log("Client: handleSubmit started");
+    if (isProcessing) {
+      console.log("Client: Already processing, skipping");
+      return;
+    }
 
     setIsProcessing(true);
 
     try {
+      console.log("Client: Calling createCheckoutOrder server function", {
+        itemsCount: cart.items.length,
+        email,
+        name: `${firstName} ${lastName}`,
+        phone,
+      });
+
       // 1. Trigger order initialization in server function
       const orderRes = await createCheckoutOrder({
-        items: cart.items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity
-        })),
-        customerInfo: {
-          email,
-          name: `${firstName} ${lastName}`,
-          phone,
-          userId: user?.id
-        },
-        shippingAddress: {
-          firstName,
-          lastName,
-          address,
-          city,
-          state: stateField,
-          pincode
+        data: {
+          items: cart.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          })),
+          customerInfo: {
+            email,
+            name: `${firstName} ${lastName}`,
+            phone,
+            userId: user?.id
+          },
+          shippingAddress: {
+            firstName,
+            lastName,
+            address,
+            city,
+            state: stateField,
+            pincode
+          }
         }
       });
 
+      console.log("Client: createCheckoutOrder resolved successfully", orderRes);
       const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock } = orderRes;
 
       // 2. Handle Mock Checkout / Offline Sandbox Mode
@@ -193,10 +209,12 @@ function Checkout() {
         
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({
-          orderId,
-          cashfreeOrderId,
-          cashfreePaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
-          isMock: true
+          data: {
+            orderId,
+            cashfreeOrderId,
+            cashfreePaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
+            isMock: true
+          }
         });
 
         if (verifyRes.success) {
