@@ -676,7 +676,24 @@ export const testResendEmail = createServerFn({ method: "POST" })
       hasRequest: !!args?.request,
       requestKeys: args?.request ? Object.keys(args.request) : [],
       requestOwnPropertyNames: args?.request ? Object.getOwnPropertyNames(args.request) : [],
+      contextKeys: args?.context ? Object.keys(args.context) : [],
+      contextSubKeys: {},
     };
+
+    if (args?.context) {
+      for (const k of Object.keys(args.context)) {
+        try {
+          const val = args.context[k];
+          if (val && typeof val === "object" && val !== null) {
+            argsDiag.contextSubKeys[k] = Object.keys(val);
+          } else {
+            argsDiag.contextSubKeys[k] = typeof val;
+          }
+        } catch (err) {
+          argsDiag.contextSubKeys[k] = "error getting keys";
+        }
+      }
+    }
 
     if (args?.request) {
       const req = args.request;
