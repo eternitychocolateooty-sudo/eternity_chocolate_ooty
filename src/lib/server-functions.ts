@@ -660,6 +660,16 @@ export const submitFeedback = createServerFn({ method: "POST" })
 // 4. TEST EMAIL SENDING
 export const testResendEmail = createServerFn({ method: "POST" })
   .handler(async () => {
+    let eventObj: any = null;
+    let eventError: string | null = null;
+    try {
+      const httpMod = "vinxi/http";
+      const { getEvent } = await import(/* @vite-ignore */ httpMod);
+      eventObj = getEvent();
+    } catch (e: any) {
+      eventError = e.message || "Failed to import/call getEvent";
+    }
+
     await ensureRuntimeEnv();
     const resendApiKey = getEnvVar("RESEND_API_KEY");
     const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
@@ -668,6 +678,12 @@ export const testResendEmail = createServerFn({ method: "POST" })
       hasResendKey: !!resendApiKey,
       resendKeyLength: resendApiKey?.length || 0,
       ownerEmail,
+      hasEvent: !!eventObj,
+      eventError,
+      eventContextKeys: eventObj?.context ? Object.keys(eventObj.context) : [],
+      hasCloudflare: !!eventObj?.context?.cloudflare,
+      cloudflareKeys: eventObj?.context?.cloudflare ? Object.keys(eventObj.context.cloudflare) : [],
+      globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
     };
 
     if (!resendApiKey) {
