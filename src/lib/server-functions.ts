@@ -112,7 +112,13 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     }
   }
 
-  // Email notifications removed as requested.
+  // A. Trigger order confirmation and alert emails via Resend server helper
+  try {
+    const { sendOrderEmails } = await import("./email.server");
+    await sendOrderEmails(order, orderItems || []);
+  } catch (emailErr) {
+    console.error("Failed to trigger Resend emails:", emailErr);
+  }
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
   const waToken = process.env.META_WHATSAPP_TOKEN;

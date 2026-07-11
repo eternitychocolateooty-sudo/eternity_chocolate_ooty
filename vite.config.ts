@@ -12,9 +12,11 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  server: {
-    experimental: {
-      asyncContext: true,
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ["vinxi/http"],
+      },
     },
   },
 });
