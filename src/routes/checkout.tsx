@@ -74,25 +74,6 @@ function Checkout() {
   const [placed, setPlaced] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [testResult, setTestResult] = useState<string | null>(null);
-  const [testingEmail, setTestingEmail] = useState(false);
-
-  const handleTestEmail = async () => {
-    setTestingEmail(true);
-    setTestResult(null);
-    try {
-      const res = await testResendEmail();
-      if (res.success) {
-        setTestResult(`Success! Test email sent successfully.\nResult: ${JSON.stringify(res.result, null, 2)}\nDiag: ${JSON.stringify(res.diag, null, 2)}`);
-      } else {
-        setTestResult(`Failed: ${res.error}\nDiag: ${JSON.stringify(res.diag, null, 2)}`);
-      }
-    } catch (e: any) {
-      setTestResult(`Error calling test endpoint: ${e.message}`);
-    } finally {
-      setTestingEmail(false);
-    }
-  };
 
   // Form State
   const [email, setEmail] = useState("");
@@ -308,26 +289,7 @@ function Checkout() {
         <div>
           <h1 className="mb-8 font-display text-4xl">Checkout</h1>
 
-          {/* Temporary Diagnostic Panel for Resend Email Setup */}
-          <div className="mb-8 p-6 border border-border rounded-lg bg-card text-card-foreground shadow-sm">
-            <h3 className="font-display text-lg mb-2 gold-text">Email Integration Diagnostics</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Click the button below to test if the live Cloudflare server can read your Resend credentials and successfully send a test email to your admin address.
-            </p>
-            <button
-              type="button"
-              onClick={handleTestEmail}
-              disabled={testingEmail}
-              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
-              {testingEmail ? "Testing API Connection..." : "Test Resend Email Setup"}
-            </button>
-            {testResult && (
-              <pre className="mt-4 p-4 bg-muted text-muted-foreground text-xs font-mono rounded overflow-x-auto whitespace-pre-wrap leading-relaxed border border-border">
-                {testResult}
-              </pre>
-            )}
-          </div>
+
 
           <form onSubmit={handleSubmit} className="space-y-10">
             <fieldset disabled={isProcessing}>

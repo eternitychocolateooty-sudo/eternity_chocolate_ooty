@@ -2,28 +2,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 
-function getEnvVar(name: string): string {
-  return (
-    (globalThis as any).__CLOUDFLARE_ENV__?.[name] ||
-    (typeof process !== "undefined" && process["env"]?.[name]) ||
-    ""
-  );
-}
-
-async function ensureRuntimeEnv() {
-  if (!(globalThis as any).__CLOUDFLARE_ENV__) {
-    try {
-      const { getCloudflareEnv } = await import("./server-env.server");
-      const env = getCloudflareEnv();
-      if (env && typeof env === "object") {
-        (globalThis as any).__CLOUDFLARE_ENV__ = env;
-      }
-    } catch (e) {
-      // Fallback
-    }
-  }
-}
-
 // Types
 export interface CheckoutItem {
   productId: string;
@@ -59,7 +37,6 @@ export interface ShippingAddress {
 
 // SHARED HELPER FUNCTION TO COMPLETE AND PROMPT ORDER FULFILLMENT
 export async function completeOrder(orderId: string, cashfreePaymentId: string) {
-  await ensureRuntimeEnv();
   // 1. Mark order as paid
   const { data: order, error: updateErr } = await supabaseAdmin
     .from("orders")
@@ -135,153 +112,12 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     }
   }
 
-  // A. Send confirmation email using Resend
-  const resendApiKey = getEnvVar("RESEND_API_KEY");
-  const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
-
-  if (resendApiKey) {
-    try {
-      const { Resend } = await import("resend");
-      const resendClient = new Resend(resendApiKey);
-
-      const itemsSummaryHtml = orderItems
-        ? orderItems
-            .map((item) => {
-              const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : "";
-              return `<tr>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; color: #5D4037; text-align: left;">
-                  <strong>${item.products?.name || "Artisan Chocolate"}</strong>${variantSuffix}
-                </td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${item.quantity}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${item.price}</td>
-              </tr>`;
-            })
-            .join("")
-        : "";
-
-      // Parse shipping address
-      const addr = (typeof order.shipping_address === "string"
-        ? JSON.parse(order.shipping_address)
-        : order.shipping_address) as ShippingAddress;
-
-      const shippingAddressHtml = addr
-        ? `<div style="background-color: #FAF6F0; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-top: 20px;">
-            <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Delivery Address</h4>
-            <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
-              <strong>${addr.firstName} ${addr.lastName}</strong><br/>
-              ${addr.address}<br/>
-              ${addr.city}, ${addr.state} - ${addr.pincode}
-            </p>
-          </div>`
-        : "";
-
-      // Send to customer
-      if (emailToUse) {
-        await resendClient.emails.send({
-          from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
-          to: emailToUse,
-          subject: `Your ETERNITY Chocolate Order #${orderId.slice(0, 8).toUpperCase()} is Confirmed!`,
-          html: `
-            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EFEBE9; border-radius: 16px; background-color: #FFFFFF;">
-              <div style="text-align: center; margin-bottom: 24px; border-bottom: 2px solid #EFEBE9; padding-bottom: 16px;">
-                <h1 style="color: #4E342E; font-family: 'Playfair Display', Georgia, serif; margin: 0; font-size: 2.2em; letter-spacing: 0.05em; font-weight: normal;">ETERNITY</h1>
-                <p style="color: #8D6E63; margin: 4px 0 0 0; font-size: 0.85em; letter-spacing: 0.2em; text-transform: uppercase;">Artisan Chocolatier</p>
-              </div>
-              
-              <h2 style="color: #4E342E; font-family: serif; font-size: 1.4em; font-weight: normal; margin-top: 0; margin-bottom: 12px;">Order Confirmed</h2>
-              <p style="color: #5D4037; line-height: 1.6; font-size: 0.95em;">Dear ${nameToUse},</p>
-              <p style="color: #5D4037; line-height: 1.6; font-size: 0.95em;">Thank you for placing your order with ETERNITY. We are preparing your box of handcrafted chocolates from the misty hills of Ooty. Your payment has been verified, and we will update you as soon as your package ships.</p>
-              
-              <div style="margin-top: 24px;">
-                <h3 style="color: #6D4C41; font-family: serif; border-bottom: 1px solid #EFEBE9; padding-bottom: 8px; margin-bottom: 12px; font-size: 1.1em; font-weight: bold;">Order Summary</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
-                  <thead>
-                    <tr style="background-color: #FAF6F0; border-bottom: 1px solid #EFEBE9;">
-                      <th style="padding: 10px 8px; text-align: left; color: #4E342E; font-size: 0.9em;">Item</th>
-                      <th style="padding: 10px 8px; text-align: center; color: #4E342E; font-size: 0.9em; width: 60px;">Qty</th>
-                      <th style="padding: 10px 8px; text-align: right; color: #4E342E; font-size: 0.9em; width: 80px;">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${itemsSummaryHtml}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style="margin-top: 16px; text-align: right; line-height: 1.8; color: #5D4037; font-size: 0.95em; border-bottom: 1px solid #EFEBE9; padding-bottom: 16px;">
-                Subtotal: <span style="font-weight: 500;">₹${order.subtotal}</span><br/>
-                Shipping: <span style="font-weight: 500;">${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}</span><br/>
-                <span style="font-size: 1.25em; font-weight: bold; color: #4E342E; display: inline-block; margin-top: 8px;">Total Paid: ₹${order.total}</span>
-              </div>
-
-              ${shippingAddressHtml}
-
-              <div style="margin-top: 32px; font-size: 0.8em; color: #8D6E63; text-align: center; border-top: 1px solid #EFEBE9; padding-top: 20px; line-height: 1.6;">
-                <strong>ETERNITY Artisan Chocolate Boutique</strong><br/>
-                No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001<br/>
-                Need help? Reply to this email or contact support.
-              </div>
-            </div>
-          `,
-        });
-      }
-
-      // Send alert to Store Owner
-      if (ownerEmail) {
-        await resendClient.emails.send({
-          from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
-          to: ownerEmail,
-          subject: `NEW ORDER: Order #${orderId.slice(0, 8).toUpperCase()} - ₹${order.total}`,
-          html: `
-            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EFEBE9; border-radius: 16px; background-color: #FAF6F0;">
-              <h2 style="color: #4E342E; font-family: serif; font-size: 1.5em; border-bottom: 2px solid #8D6E63; padding-bottom: 10px; margin-top: 0;">New Paid Order Received!</h2>
-              <p style="color: #5D4037; font-size: 0.95em;">A new order has been paid and is ready for fulfillment.</p>
-              
-              <div style="background-color: #FFFFFF; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Customer Details</h4>
-                <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
-                  <strong>Name:</strong> ${nameToUse}<br/>
-                  <strong>Email:</strong> ${emailToUse || "N/A"}<br/>
-                  <strong>Phone:</strong> ${customerPhone || "N/A"}<br/>
-                  <strong>Order ID:</strong> ${orderId}<br/>
-                  <strong>Cashfree Payment ID:</strong> ${cashfreePaymentId}
-                </p>
-              </div>
-
-              ${shippingAddressHtml ? shippingAddressHtml.replace(/#FAF6F0/g, "#FFFFFF") : ""}
-
-              <h3 style="color: #6D4C41; font-family: serif; margin-top: 24px; margin-bottom: 8px;">Order Details</h3>
-              <table style="width: 100%; border-collapse: collapse; background-color: #FFFFFF; border: 1px solid #EFEBE9; border-radius: 8px; overflow: hidden;">
-                <thead>
-                  <tr style="background-color: #EFEBE9; border-bottom: 1px solid #EFEBE9;">
-                    <th style="padding: 10px 8px; text-align: left; color: #4E342E; font-size: 0.9em;">Item</th>
-                    <th style="padding: 10px 8px; text-align: center; color: #4E342E; font-size: 0.9em; width: 60px;">Qty</th>
-                    <th style="padding: 10px 8px; text-align: right; color: #4E342E; font-size: 0.9em; width: 80px;">Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsSummaryHtml}
-                </tbody>
-              </table>
-
-              <div style="margin-top: 15px; text-align: right; line-height: 1.8; color: #4E342E; font-size: 1em; font-weight: bold;">
-                Subtotal: ₹${order.subtotal}<br/>
-                Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
-                <span style="font-size: 1.2em;">Total Paid: ₹${order.total}</span>
-              </div>
-            </div>
-          `,
-        });
-      }
-    } catch (emailErr) {
-      console.error("Resend email delivery failed:", emailErr);
-    }
-  }
+  // Email notifications removed as requested.
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
-  const waToken = getEnvVar("META_WHATSAPP_TOKEN");
-  const waPhoneId = getEnvVar("META_WHATSAPP_PHONE_NUMBER_ID");
-  const ownerPhone = getEnvVar("OWNER_WHATSAPP_NUMBER");
+  const waToken = process.env.META_WHATSAPP_TOKEN;
+  const waPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
+  const ownerPhone = process.env.OWNER_WHATSAPP_NUMBER;
 
   if (waToken && waPhoneId) {
     const baseWhatsAppUrl = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
@@ -363,15 +199,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 // 1. ORDER INITIALIZATION
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
-    await ensureRuntimeEnv();
     const { items, customerInfo, shippingAddress } = payload;
-    console.log("Server: createCheckoutOrder env check:", {
-      hasServiceKey: !!getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
-      serviceKeyLength: getEnvVar("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
-      hasAnonKey: !!getEnvVar("VITE_SUPABASE_ANON_KEY"),
-      hasResendKey: !!getEnvVar("RESEND_API_KEY"),
-    });
-    console.log("Server: createCheckoutOrder payload received", { itemsCount: items?.length, customerInfo });
 
     // Fetch actual prices from Supabase
     const productIds = items.map((i) => i.productId);
@@ -413,9 +241,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const appId = getEnvVar("VITE_CASHFREE_APP_ID");
-    const secretKey = getEnvVar("CASHFREE_SECRET_KEY");
-    const cashfreeEnv = getEnvVar("VITE_CASHFREE_ENV") || "TEST";
+    const appId = process.env.VITE_CASHFREE_APP_ID;
+    const secretKey = process.env.CASHFREE_SECRET_KEY;
+    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
 
     let cashfreeOrderId = `CF-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let paymentSessionId = "";
@@ -428,7 +256,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     } else {
       try {
         const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-        const returnUrl = `${getEnvVar("VITE_SITE_URL") || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
+        const returnUrl = `${process.env.VITE_SITE_URL || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
 
         const response = await fetch(`https://${host}/pg/orders`, {
           method: "POST",
@@ -538,7 +366,6 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 // 2. PAYMENT STATUS VERIFICATION (Used for both live API checking and local simulation sandbox)
 export const verifyCheckoutPayment = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
-    await ensureRuntimeEnv();
     const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = payload;
 
     if (isMock) {
@@ -547,9 +374,9 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
-    const appId = getEnvVar("VITE_CASHFREE_APP_ID");
-    const secretKey = getEnvVar("CASHFREE_SECRET_KEY");
-    const cashfreeEnv = getEnvVar("VITE_CASHFREE_ENV") || "TEST";
+    const appId = process.env.VITE_CASHFREE_APP_ID;
+    const secretKey = process.env.CASHFREE_SECRET_KEY;
+    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
 
     if (!appId || !secretKey) {
       throw new Error("Cashfree API key configuration is missing on the server.");
@@ -604,7 +431,6 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
 // 3. SUBMIT FEEDBACK
 export const submitFeedback = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
-    await ensureRuntimeEnv();
     const { name, email, rating, message } = payload;
 
     // Record feedback in database
@@ -618,133 +444,6 @@ export const submitFeedback = createServerFn({ method: "POST" })
       throw new Error(`Failed to save feedback: ${insertErr?.message || "Unknown error"}`);
     }
 
-    // Trigger Resend email notification to owner
-    const resendApiKey = getEnvVar("RESEND_API_KEY");
-    const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com"; // Owner email
-
-    if (resendApiKey) {
-      try {
-        const { Resend } = await import("resend");
-        const resendClient = new Resend(resendApiKey);
-
-        await resendClient.emails.send({
-          from: "ETERNITY Feedback System <feedback@eternitychocolateooty.in>",
-          to: ownerEmail,
-          subject: `New Customer Feedback: ${rating} Stars from ${name}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #FFFDE7;">
-              <h2 style="color: #F57F17; font-family: serif; border-bottom: 2px solid #FBC02D; padding-bottom: 10px;">New Feedback Received</h2>
-              <p><strong>Customer Name:</strong> ${name}</p>
-              <p><strong>Customer Email:</strong> ${email}</p>
-              <p><strong>Rating:</strong> ${rating} / 5 Stars</p>
-              <p><strong>Message:</strong></p>
-              <blockquote style="background-color: #FFF9C4; padding: 15px; border-left: 5px solid #FBC02D; border-radius: 4px; font-style: italic;">
-                "${message}"
-              </blockquote>
-              <p style="margin-top: 25px; font-size: 0.8em; color: #757575;">
-                Submitted at: ${new Date(fb.created_at).toLocaleString()}
-              </p>
-            </div>
-          `,
-        });
-      } catch (emailErr) {
-        console.error("Resend feedback notification email delivery failed:", emailErr);
-      }
-    }
-
+    // Feedback recorded, email notifications removed.
     return { success: true };
-  });
-
-// 4. TEST EMAIL SENDING
-export const testResendEmail = createServerFn({ method: "POST" })
-  .handler(async (args: any) => {
-    let hasGetCloudflareEnv = false;
-    let getEnvError: string | null = null;
-    let fetchedEnv: any = null;
-
-    try {
-      const { getCloudflareEnv } = await import("./server-env.server");
-      hasGetCloudflareEnv = true;
-      fetchedEnv = getCloudflareEnv();
-    } catch (e: any) {
-      getEnvError = e.message || "Failed to load/run getCloudflareEnv";
-    }
-
-    const argsDiag: any = {
-      hasArgs: !!args,
-      argsKeys: args ? Object.keys(args) : [],
-      hasRequest: !!args?.request,
-      requestKeys: args?.request ? Object.keys(args.request) : [],
-      requestOwnPropertyNames: args?.request ? Object.getOwnPropertyNames(args.request) : [],
-      contextKeys: args?.context ? Object.keys(args.context) : [],
-      contextSubKeys: {},
-    };
-
-    if (args?.context) {
-      for (const k of Object.keys(args.context)) {
-        try {
-          const val = args.context[k];
-          if (val && typeof val === "object" && val !== null) {
-            argsDiag.contextSubKeys[k] = Object.keys(val);
-          } else {
-            argsDiag.contextSubKeys[k] = typeof val;
-          }
-        } catch (err) {
-          argsDiag.contextSubKeys[k] = "error getting keys";
-        }
-      }
-    }
-
-    if (args?.request) {
-      const req = args.request;
-      argsDiag.reqContextKeys = (req as any).context ? Object.keys((req as any).context) : null;
-      argsDiag.cfKeys = (req as any).cf ? Object.keys((req as any).cf) : null;
-      
-      const allProps = [...Object.getOwnPropertyNames(req), ...Object.getOwnPropertyNames(Object.getPrototypeOf(req))];
-      argsDiag.allReqProps = allProps.filter(p => typeof p === "string" && (p.toLowerCase().includes("env") || p.toLowerCase().includes("cf") || p.toLowerCase().includes("context") || p.toLowerCase().includes("cloudflare")));
-    }
-
-    await ensureRuntimeEnv();
-    const resendApiKey = getEnvVar("RESEND_API_KEY");
-    const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
-    
-    const globalKeys = Object.keys(globalThis);
-    const upperGlobalKeys = globalKeys.filter(k => typeof k === "string" && k === k.toUpperCase() && k !== "TEMPORARY_KEY");
-
-    const diag = {
-      hasResendKey: !!resendApiKey,
-      resendKeyLength: resendApiKey?.length || 0,
-      ownerEmail,
-      hasGetCloudflareEnv,
-      getEnvError,
-      hasFetchedEnv: !!fetchedEnv,
-      fetchedEnv,
-      argsDiag,
-      upperGlobalKeys,
-      globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
-      globalRawEnvType: (globalThis as any).__CLOUDFLARE_ENV_TYPE__,
-      globalRawEnvKeys: (globalThis as any).__CLOUDFLARE_ENV_KEYS__,
-      hasRawEnv: !!(globalThis as any).__CLOUDFLARE_RAW_ENV__,
-      hasResendInRaw: (globalThis as any).__CLOUDFLARE_RAW_ENV__ ? "RESEND_API_KEY" in (globalThis as any).__CLOUDFLARE_RAW_ENV__ : false,
-    };
-
-    if (!resendApiKey) {
-      return { success: false, error: "RESEND_API_KEY is missing on the server.", diag };
-    }
-
-    try {
-      const { Resend } = await import("resend");
-      const resendClient = new Resend(resendApiKey);
-
-      const result = await resendClient.emails.send({
-        from: "ETERNITY Test System <feedback@eternitychocolateooty.in>",
-        to: ownerEmail,
-        subject: "ETERNITY Email Test Run",
-        html: "<p>If you see this, email sending is working perfectly!</p>",
-      });
-
-      return { success: true, result, diag };
-    } catch (e: any) {
-      return { success: false, error: e.message || "Unknown error occurred", diag };
-    }
   });
