@@ -66,8 +66,15 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+function setupRuntimeEnv(env: unknown) {
+  if (env && typeof env === "object") {
+    (globalThis as any).__CLOUDFLARE_ENV__ = env;
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    setupRuntimeEnv(env);
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
