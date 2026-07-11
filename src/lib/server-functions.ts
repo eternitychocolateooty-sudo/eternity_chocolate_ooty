@@ -115,9 +115,10 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   // A. Order confirmation emails are managed asynchronously via Supabase Database Webhook & Edge Function.
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
-  const waToken = process.env.META_WHATSAPP_TOKEN;
-  const waPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
-  const ownerPhone = process.env.OWNER_WHATSAPP_NUMBER;
+  const { getPlatformEnv } = await import("./env.server");
+  const waToken = getPlatformEnv("META_WHATSAPP_TOKEN");
+  const waPhoneId = getPlatformEnv("META_WHATSAPP_PHONE_NUMBER_ID");
+  const ownerPhone = getPlatformEnv("OWNER_WHATSAPP_NUMBER");
 
   if (waToken && waPhoneId) {
     const baseWhatsAppUrl = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
@@ -241,9 +242,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const appId = process.env.VITE_CASHFREE_APP_ID;
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
+    const { getPlatformEnv } = await import("./env.server");
+    const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
+    const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
+    const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
 
     let cashfreeOrderId = `CF-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let paymentSessionId = "";
@@ -376,9 +378,10 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
-    const appId = process.env.VITE_CASHFREE_APP_ID;
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-    const cashfreeEnv = process.env.VITE_CASHFREE_ENV || "TEST";
+    const { getPlatformEnv } = await import("./env.server");
+    const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
+    const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
+    const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
 
     if (!appId || !secretKey) {
       throw new Error("Cashfree API key configuration is missing on the server.");
