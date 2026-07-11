@@ -67,6 +67,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 }
 
 function setupRuntimeEnv(env: unknown) {
+  (globalThis as any).__CLOUDFLARE_RAW_ENV__ = env;
+  (globalThis as any).__CLOUDFLARE_ENV_TYPE__ = typeof env;
+  (globalThis as any).__CLOUDFLARE_ENV_KEYS__ = env && typeof env === "object" ? Object.keys(env) : [];
   if (env && typeof env === "object") {
     (globalThis as any).__CLOUDFLARE_ENV__ = env;
   }

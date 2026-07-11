@@ -722,6 +722,10 @@ export const testResendEmail = createServerFn({ method: "POST" })
       argsDiag,
       upperGlobalKeys,
       globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
+      globalRawEnvType: (globalThis as any).__CLOUDFLARE_ENV_TYPE__,
+      globalRawEnvKeys: (globalThis as any).__CLOUDFLARE_ENV_KEYS__,
+      hasRawEnv: !!(globalThis as any).__CLOUDFLARE_RAW_ENV__,
+      hasResendInRaw: (globalThis as any).__CLOUDFLARE_RAW_ENV__ ? "RESEND_API_KEY" in (globalThis as any).__CLOUDFLARE_RAW_ENV__ : false,
     };
 
     if (!resendApiKey) {
