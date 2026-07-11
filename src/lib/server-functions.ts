@@ -708,6 +708,9 @@ export const testResendEmail = createServerFn({ method: "POST" })
     const resendApiKey = getEnvVar("RESEND_API_KEY");
     const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
     
+    const globalKeys = Object.keys(globalThis);
+    const upperGlobalKeys = globalKeys.filter(k => typeof k === "string" && k === k.toUpperCase() && k !== "TEMPORARY_KEY");
+
     const diag = {
       hasResendKey: !!resendApiKey,
       resendKeyLength: resendApiKey?.length || 0,
@@ -717,6 +720,7 @@ export const testResendEmail = createServerFn({ method: "POST" })
       hasFetchedEnv: !!fetchedEnv,
       fetchedEnv,
       argsDiag,
+      upperGlobalKeys,
       globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
     };
 
