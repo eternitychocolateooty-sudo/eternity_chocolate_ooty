@@ -286,6 +286,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       paymentSessionId,
       amount: total.toFixed(2),
       isMock,
+      hasAppId: !!appId,
+      hasSecretKey: !!secretKey,
+      cashfreeEnv,
     };
   });
 

@@ -206,6 +206,7 @@ function Checkout() {
       // 2. Handle Mock Checkout / Offline Sandbox Mode
       if (isMock) {
         console.warn("Processing checkout in simulation sandbox mode.");
+        alert(`Offline Sandbox Mode: Cashfree keys are missing on the live server.\n(hasAppId: ${String((orderRes as any).hasAppId)}, hasSecretKey: ${String((orderRes as any).hasSecretKey)}, env: ${(orderRes as any).cashfreeEnv})`);
         
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({
