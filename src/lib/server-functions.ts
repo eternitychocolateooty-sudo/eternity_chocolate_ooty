@@ -1,6 +1,7 @@
 // Forced redeployment to apply new Cloudflare environment variables
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
+import { getPlatformEnv } from "./env.server";
 
 // Types
 export interface CheckoutItem {
@@ -322,7 +323,6 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const { getPlatformEnv } = await import("./env.server");
     const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
     const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
     const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
@@ -463,7 +463,6 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
-    const { getPlatformEnv } = await import("./env.server");
     const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
     const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
     const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
