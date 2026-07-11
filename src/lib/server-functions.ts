@@ -198,7 +198,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 
 // 1. ORDER INITIALIZATION
 export const createCheckoutOrder = createServerFn({ method: "POST" })
-  .handler(async ({ data: payload }) => {
+  .handler(async ({ data: payload, request }) => {
     const { items, customerInfo, shippingAddress } = payload;
 
     // Fetch actual prices from Supabase
@@ -256,7 +256,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     } else {
       try {
         const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-        const returnUrl = `${process.env.VITE_SITE_URL || "https://eternitychocolateooty.in"}/checkout?order_id={order_id}`;
+        const requestUrl = request ? new URL(request.url) : null;
+        const hostOrigin = requestUrl ? requestUrl.origin : "https://eternitychocolateooty.in";
+        const returnUrl = `${hostOrigin}/checkout?order_id={order_id}`;
 
         const response = await fetch(`https://${host}/pg/orders`, {
           method: "POST",
