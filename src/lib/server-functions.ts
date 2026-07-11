@@ -13,10 +13,8 @@ function getEnvVar(name: string): string {
 async function ensureRuntimeEnv() {
   if (!(globalThis as any).__CLOUDFLARE_ENV__) {
     try {
-      const importPath = "vinxi/http";
-      const { getEvent } = await import(/* @vite-ignore */ importPath);
-      const event = getEvent();
-      const env = event?.context?.cloudflare?.env;
+      const { getCloudflareEnv } = await import("./server-env.server");
+      const env = getCloudflareEnv();
       if (env && typeof env === "object") {
         (globalThis as any).__CLOUDFLARE_ENV__ = env;
       }
@@ -660,14 +658,16 @@ export const submitFeedback = createServerFn({ method: "POST" })
 // 4. TEST EMAIL SENDING
 export const testResendEmail = createServerFn({ method: "POST" })
   .handler(async () => {
-    let eventObj: any = null;
-    let eventError: string | null = null;
+    let hasGetCloudflareEnv = false;
+    let getEnvError: string | null = null;
+    let fetchedEnv: any = null;
+
     try {
-      const httpMod = "vinxi/http";
-      const { getEvent } = await import(/* @vite-ignore */ httpMod);
-      eventObj = getEvent();
+      const { getCloudflareEnv } = await import("./server-env.server");
+      hasGetCloudflareEnv = true;
+      fetchedEnv = getCloudflareEnv();
     } catch (e: any) {
-      eventError = e.message || "Failed to import/call getEvent";
+      getEnvError = e.message || "Failed to load/run getCloudflareEnv";
     }
 
     await ensureRuntimeEnv();
@@ -678,11 +678,10 @@ export const testResendEmail = createServerFn({ method: "POST" })
       hasResendKey: !!resendApiKey,
       resendKeyLength: resendApiKey?.length || 0,
       ownerEmail,
-      hasEvent: !!eventObj,
-      eventError,
-      eventContextKeys: eventObj?.context ? Object.keys(eventObj.context) : [],
-      hasCloudflare: !!eventObj?.context?.cloudflare,
-      cloudflareKeys: eventObj?.context?.cloudflare ? Object.keys(eventObj.context.cloudflare) : [],
+      hasGetCloudflareEnv,
+      getEnvError,
+      hasFetchedEnv: !!fetchedEnv,
+      fetchedEnvKeys: fetchedEnv ? Object.keys(fetchedEnv) : [],
       globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
     };
 
