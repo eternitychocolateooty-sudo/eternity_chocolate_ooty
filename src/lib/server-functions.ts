@@ -171,6 +171,8 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     let paymentSessionId = "";
     let isMock = false;
 
+    console.log("Server: createCheckoutOrder env check:", { hasAppId: !!appId, hasSecretKey: !!secretKey, cashfreeEnv });
+
     if (!appId || !secretKey || appId === "your-cashfree-app-id" || secretKey === "your-cashfree-secret-key") {
       console.warn("Cashfree API credentials missing or placeholder. Initiating MOCK payment order.");
       paymentSessionId = `mock_session_${Math.random().toString(36).substring(2, 15)}`;
