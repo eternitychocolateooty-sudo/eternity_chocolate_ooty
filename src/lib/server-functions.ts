@@ -656,3 +656,37 @@ export const submitFeedback = createServerFn({ method: "POST" })
 
     return { success: true };
   });
+
+// 4. TEST EMAIL SENDING
+export const testResendEmail = createServerFn({ method: "POST" })
+  .handler(async () => {
+    await ensureRuntimeEnv();
+    const resendApiKey = getEnvVar("RESEND_API_KEY");
+    const ownerEmail = getEnvVar("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
+    
+    const diag = {
+      hasResendKey: !!resendApiKey,
+      resendKeyLength: resendApiKey?.length || 0,
+      ownerEmail,
+    };
+
+    if (!resendApiKey) {
+      return { success: false, error: "RESEND_API_KEY is missing on the server.", diag };
+    }
+
+    try {
+      const { Resend } = await import("resend");
+      const resendClient = new Resend(resendApiKey);
+
+      const result = await resendClient.emails.send({
+        from: "ETERNITY Test System <feedback@eternitychocolateooty.in>",
+        to: ownerEmail,
+        subject: "ETERNITY Email Test Run",
+        html: "<p>If you see this, email sending is working perfectly!</p>",
+      });
+
+      return { success: true, result, diag };
+    } catch (e: any) {
+      return { success: false, error: e.message || "Unknown error occurred", diag };
+    }
+  });
