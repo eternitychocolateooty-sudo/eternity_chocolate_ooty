@@ -657,7 +657,7 @@ export const submitFeedback = createServerFn({ method: "POST" })
 
 // 4. TEST EMAIL SENDING
 export const testResendEmail = createServerFn({ method: "POST" })
-  .handler(async () => {
+  .handler(async (args: any) => {
     let hasGetCloudflareEnv = false;
     let getEnvError: string | null = null;
     let fetchedEnv: any = null;
@@ -668,6 +668,23 @@ export const testResendEmail = createServerFn({ method: "POST" })
       fetchedEnv = getCloudflareEnv();
     } catch (e: any) {
       getEnvError = e.message || "Failed to load/run getCloudflareEnv";
+    }
+
+    const argsDiag: any = {
+      hasArgs: !!args,
+      argsKeys: args ? Object.keys(args) : [],
+      hasRequest: !!args?.request,
+      requestKeys: args?.request ? Object.keys(args.request) : [],
+      requestOwnPropertyNames: args?.request ? Object.getOwnPropertyNames(args.request) : [],
+    };
+
+    if (args?.request) {
+      const req = args.request;
+      argsDiag.reqContextKeys = (req as any).context ? Object.keys((req as any).context) : null;
+      argsDiag.cfKeys = (req as any).cf ? Object.keys((req as any).cf) : null;
+      
+      const allProps = [...Object.getOwnPropertyNames(req), ...Object.getOwnPropertyNames(Object.getPrototypeOf(req))];
+      argsDiag.allReqProps = allProps.filter(p => typeof p === "string" && (p.toLowerCase().includes("env") || p.toLowerCase().includes("cf") || p.toLowerCase().includes("context") || p.toLowerCase().includes("cloudflare")));
     }
 
     await ensureRuntimeEnv();
@@ -682,6 +699,7 @@ export const testResendEmail = createServerFn({ method: "POST" })
       getEnvError,
       hasFetchedEnv: !!fetchedEnv,
       fetchedEnv,
+      argsDiag,
       globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
     };
 
