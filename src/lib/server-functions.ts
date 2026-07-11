@@ -1,3 +1,4 @@
+// Forced redeployment to apply new Cloudflare environment variables
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 
