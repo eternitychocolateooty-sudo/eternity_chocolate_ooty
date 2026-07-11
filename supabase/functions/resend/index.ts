@@ -1,65 +1,99 @@
-import { getEvent } from "vinxi/http";
-import { Resend } from "resend";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { Resend } from "npm:resend@1.1.0"
 
-export interface ShippingAddress {
-  firstName: string;
-  lastName: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
+interface WebhookPayload {
+  type: "INSERT" | "UPDATE" | "DELETE" | "SELECT"
+  table: string
+  schema: string
+  record: any
+  old_record: any | null
 }
 
-export async function sendOrderEmails(order: any, orderItems: any[]) {
-  let resendApiKey = process.env.RESEND_API_KEY;
-  let ownerEmail = process.env.ADMIN_EMAIL || "eternitychocolateooty@gmail.com";
+interface ShippingAddress {
+  firstName: string
+  lastName: string
+  address: string
+  city: string
+  state: string
+  pincode: string
+}
 
-  // Resolve Cloudflare bindings from Vinxi HTTP context at runtime
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
+  }
+
   try {
-    const event = getEvent();
-    const cf = event?.nativeEvent?.context?.cloudflare;
-    if (cf?.env) {
-      if (cf.env.RESEND_API_KEY) {
-        resendApiKey = cf.env.RESEND_API_KEY;
-      }
-      if (cf.env.ADMIN_EMAIL) {
-        ownerEmail = cf.env.ADMIN_EMAIL;
-      }
+    const resendApiKey = Deno.env.get("RESEND_API_KEY")
+    const ownerEmail = Deno.env.get("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com"
+
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not configured in Supabase Edge Function Secrets.")
     }
-  } catch (e) {
-    console.warn("Could not retrieve Cloudflare native context inside sendOrderEmails:", e);
-  }
 
-  if (!resendApiKey) {
-    console.error("Resend delivery skipped: RESEND_API_KEY is not defined in any environment scope.");
-    return;
-  }
+    const payload: WebhookPayload = await req.json()
+    console.log("Supabase Webhook Payload received:", JSON.stringify(payload, null, 2))
 
-  try {
-    const resendClient = new Resend(resendApiKey);
-    const orderId = order.id;
-    const customerEmail = order.guest_email || "";
-    const customerName = order.guest_name || "Valued Customer";
+    const { type, record, old_record } = payload
 
+    // Determine if payment was completed in this trigger event
+    const isPaymentCompleted = 
+      (type === "UPDATE" && record.payment_status === "paid" && old_record?.payment_status !== "paid") ||
+      (type === "INSERT" && record.payment_status === "paid")
+
+    if (!isPaymentCompleted) {
+      console.log(`Payment completion conditions not met. Event Type: ${type}, Payment Status: ${record?.payment_status}`)
+      return new Response(
+        JSON.stringify({ success: true, message: "Skipped: Not a paid payment trigger event." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    const orderId = record.id
+    console.log(`Processing order receipt emails for Order ID: ${orderId}`)
+
+    // Initialize Supabase Client with service key context to bypass RLS
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Fetch order items and products details
+    const { data: orderItems, error: itemsErr } = await supabase
+      .from("order_items")
+      .select("*, products(*)")
+      .eq("order_id", orderId)
+
+    if (itemsErr) {
+      throw new Error(`Failed to retrieve order items: ${itemsErr.message}`)
+    }
+
+    // Build order items summary table markup
     const itemsSummaryHtml = orderItems
       ? orderItems
-          .map((item) => {
-            const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : "";
+          .map((item: any) => {
+            const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : ""
             return `<tr>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; color: #5D4037; text-align: left;">
                 <strong>${item.products?.name || "Artisan Chocolate"}</strong>${variantSuffix}
               </td>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${item.quantity}</td>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${item.price}</td>
-            </tr>`;
+            </tr>`
           })
           .join("")
-      : "";
+      : ""
 
     // Parse shipping address
-    const addr = (typeof order.shipping_address === "string"
-      ? JSON.parse(order.shipping_address)
-      : order.shipping_address) as ShippingAddress;
+    const addr = (typeof record.shipping_address === "string"
+      ? JSON.parse(record.shipping_address)
+      : record.shipping_address) as ShippingAddress
 
     const shippingAddressHtml = addr
       ? `<div style="background-color: #FAF6F0; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-top: 20px;">
@@ -70,9 +104,14 @@ export async function sendOrderEmails(order: any, orderItems: any[]) {
             ${addr.city}, ${addr.state} - ${addr.pincode}
           </p>
         </div>`
-      : "";
+      : ""
 
-    // Send to Customer
+    const customerEmail = record.guest_email || ""
+    const customerName = record.guest_name || "Valued Customer"
+
+    const resendClient = new Resend(resendApiKey)
+
+    // 1. Dispatch confirmation email to customer
     if (customerEmail) {
       await resendClient.emails.send({
         from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
@@ -106,9 +145,9 @@ export async function sendOrderEmails(order: any, orderItems: any[]) {
             </div>
 
             <div style="margin-top: 16px; text-align: right; line-height: 1.8; color: #5D4037; font-size: 0.95em; border-bottom: 1px solid #EFEBE9; padding-bottom: 16px;">
-              Subtotal: <span style="font-weight: 500;">₹${order.subtotal}</span><br/>
-              Shipping: <span style="font-weight: 500;">${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}</span><br/>
-              <span style="font-size: 1.25em; font-weight: bold; color: #4E342E; display: inline-block; margin-top: 8px;">Total Paid: ₹${order.total}</span>
+              Subtotal: <span style="font-weight: 500;">₹${record.subtotal}</span><br/>
+              Shipping: <span style="font-weight: 500;">${record.shipping_fee === 0 ? "Free" : `₹${record.shipping_fee}`}</span><br/>
+              <span style="font-size: 1.25em; font-weight: bold; color: #4E342E; display: inline-block; margin-top: 8px;">Total Paid: ₹${record.total}</span>
             </div>
 
             ${shippingAddressHtml}
@@ -120,16 +159,16 @@ export async function sendOrderEmails(order: any, orderItems: any[]) {
             </div>
           </div>
         `,
-      });
-      console.log(`Resend: Confirmation email dispatched to customer: ${customerEmail}`);
+      })
+      console.log(`Confirmation email sent successfully to customer: ${customerEmail}`)
     }
 
-    // Send alert to Store Owner
+    // 2. Dispatch notification email to store owner
     if (ownerEmail) {
       await resendClient.emails.send({
         from: "ETERNITY Boutique <orders@eternitychocolateooty.in>",
         to: ownerEmail,
-        subject: `NEW ORDER: Order #${orderId.slice(0, 8).toUpperCase()} - ₹${order.total}`,
+        subject: `NEW ORDER: Order #${orderId.slice(0, 8).toUpperCase()} - ₹${record.total}`,
         html: `
           <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EFEBE9; border-radius: 16px; background-color: #FAF6F0;">
             <h2 style="color: #4E342E; font-family: serif; font-size: 1.5em; border-bottom: 2px solid #8D6E63; padding-bottom: 10px; margin-top: 0;">New Paid Order Received!</h2>
@@ -140,7 +179,7 @@ export async function sendOrderEmails(order: any, orderItems: any[]) {
               <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
                 <strong>Name:</strong> ${customerName}<br/>
                 <strong>Email:</strong> ${customerEmail || "N/A"}<br/>
-                <strong>Phone:</strong> ${order.guest_phone || "N/A"}<br/>
+                <strong>Phone:</strong> ${record.guest_phone || "N/A"}<br/>
                 <strong>Order ID:</strong> ${orderId}
               </p>
             </div>
@@ -162,16 +201,26 @@ export async function sendOrderEmails(order: any, orderItems: any[]) {
             </table>
 
             <div style="margin-top: 15px; text-align: right; line-height: 1.8; color: #4E342E; font-size: 1em; font-weight: bold;">
-              Subtotal: ₹${order.subtotal}<br/>
-              Shipping: ${order.shipping_fee === 0 ? "Free" : `₹${order.shipping_fee}`}<br/>
-              <span style="font-size: 1.25em;">Total Paid: ₹${order.total}</span>
+              Subtotal: ₹${record.subtotal}<br/>
+              Shipping: ${record.shipping_fee === 0 ? "Free" : `₹${record.shipping_fee}`}<br/>
+              <span style="font-size: 1.25em;">Total Paid: ₹${record.total}</span>
             </div>
           </div>
         `,
-      });
-      console.log(`Resend: Alert email dispatched to owner: ${ownerEmail}`);
+      })
+      console.log(`Alert email sent successfully to store owner: ${ownerEmail}`)
     }
-  } catch (err) {
-    console.error("Resend email delivery execution failed:", err);
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Order confirmation emails dispatched." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+
+  } catch (error: any) {
+    console.error("Error in resend edge function execution:", error.message)
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
   }
-}
+})

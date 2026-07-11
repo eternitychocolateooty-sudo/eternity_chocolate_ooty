@@ -112,13 +112,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     }
   }
 
-  // A. Trigger order confirmation and alert emails via Resend server helper
-  try {
-    const { sendOrderEmails } = await import("./email.server");
-    await sendOrderEmails(order, orderItems || []);
-  } catch (emailErr) {
-    console.error("Failed to trigger Resend emails:", emailErr);
-  }
+  // A. Order confirmation emails are managed asynchronously via Supabase Database Webhook & Edge Function.
 
   // B. Meta WhatsApp Cloud API Alerts (direct HTTP fetch calls)
   const waToken = process.env.META_WHATSAPP_TOKEN;
