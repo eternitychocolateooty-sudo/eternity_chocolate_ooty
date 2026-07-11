@@ -681,7 +681,7 @@ export const testResendEmail = createServerFn({ method: "POST" })
       hasGetCloudflareEnv,
       getEnvError,
       hasFetchedEnv: !!fetchedEnv,
-      fetchedEnvKeys: fetchedEnv ? Object.keys(fetchedEnv) : [],
+      fetchedEnv,
       globalEnvKeys: (globalThis as any).__CLOUDFLARE_ENV__ ? Object.keys((globalThis as any).__CLOUDFLARE_ENV__) : [],
     };
 
