@@ -335,7 +335,7 @@ function AccountPage() {
                         <div className="space-y-3">
                           {order.order_items?.map((item: any) => (
                             <div key={item.id} className="flex justify-between items-center gap-4 text-sm">
-                              <span className="text-foreground">{item.quantity}x {item.products?.name || "Artisan Chocolate"}</span>
+                              <span className="text-foreground">{item.quantity}x {item.products?.name || "Artisan Chocolate"}{item.selected_variant ? ` (${item.selected_variant})` : ""}</span>
                               <span className="font-medium">{formatMoney(Number(item.price) * item.quantity)}</span>
                             </div>
                           ))}

@@ -15,6 +15,7 @@ import {
 import { useCart, parseVariant } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
 import logoImg from "@/assets/logo.png";
+import { resolveProductImage } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Home" },
@@ -221,7 +222,7 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                     className="grid grid-cols-[76px_1fr] gap-4 rounded-2xl bg-card p-3 shadow-soft"
                   >
                     <img
-                      src={product.images[0]}
+                      src={resolveProductImage(product.images[0])}
                       alt={product.name}
                       className="h-20 w-20 rounded-xl object-cover"
                     />

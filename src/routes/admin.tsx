@@ -715,7 +715,7 @@ function AdminConsole() {
                           {order.order_items?.map((item: any) => (
                             <div key={item.id} className="flex gap-3 text-sm">
                               <span className="font-semibold text-accent shrink-0">{item.quantity}x</span>
-                              <span className="text-foreground">{item.products?.name || "Artisan Chocolate"}</span>
+                              <span className="text-foreground">{item.products?.name || "Artisan Chocolate"}{item.selected_variant ? ` (${item.selected_variant})` : ""}</span>
                               <span className="text-muted-foreground ml-auto">{formatMoney(Number(item.price) * item.quantity)}</span>
                             </div>
                           ))}

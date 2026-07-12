@@ -181,7 +181,8 @@ function Checkout() {
         data: {
           items: cart.items.map(item => ({
             productId: item.productId,
-            quantity: item.quantity
+            quantity: item.quantity,
+            selectedVariant: item.selectedVariant
           })),
           customerInfo: {
             email,
