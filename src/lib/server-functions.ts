@@ -89,29 +89,9 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     }
   }
 
-  const customerEmail = order.guest_email || "";
-  const customerName = order.guest_name || "Valued Customer";
-  const customerPhone = order.guest_phone || "";
-
-  // Load customer email details if logged in
-  let emailToUse = customerEmail;
-  let nameToUse = customerName;
-  if (order.user_id) {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", order.user_id)
-      .single();
-    
-    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(order.user_id);
-    
-    if (userData?.user?.email) {
-      emailToUse = userData.user.email;
-    }
-    if (profile?.full_name) {
-      nameToUse = profile.full_name;
-    }
-  }
+  const emailToUse = order.guest_email || "";
+  const nameToUse = order.guest_name || "Valued Customer";
+  const phoneToUse = order.guest_phone || "";
 
   // A. Trigger order confirmation and alert emails via Resend HTTP API
   try {
@@ -386,9 +366,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         user_id: customerInfo.userId || null,
-        guest_email: customerInfo.userId ? null : customerInfo.email,
-        guest_name: customerInfo.userId ? null : customerInfo.name,
-        guest_phone: customerInfo.userId ? null : customerInfo.phone,
+        guest_email: customerInfo.email || null,
+        guest_name: customerInfo.name || null,
+        guest_phone: customerInfo.phone || null,
         shipping_address: shippingAddress,
         subtotal,
         shipping_fee: shippingFee,
