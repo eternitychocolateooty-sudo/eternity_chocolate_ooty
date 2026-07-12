@@ -158,14 +158,6 @@ function Home() {
                       >
                         View Product
                       </Link>
-                      <button
-                        onClick={() => cart.addItem(p)}
-                        className="inline-flex items-center justify-center rounded-full bg-foreground text-background h-8 w-8 hover:bg-foreground/80 transition-colors"
-                        title="Add to cart"
-                        aria-label="Add to cart"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </article>

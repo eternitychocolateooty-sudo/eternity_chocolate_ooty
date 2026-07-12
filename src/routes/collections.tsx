@@ -167,7 +167,12 @@ function Collections() {
                   <div className="divider-gold my-5" />
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-display text-2xl">{formatMoney(getProductPrice(product))}</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-display text-2xl">{formatMoney(getProductPrice(product))}</span>
+                        {product.weight && (
+                          <span className="text-xs text-muted-foreground">· {product.weight}</span>
+                        )}
+                      </div>
                       {product.sale_price && (
                         <p className="text-xs text-muted-foreground line-through">
                           {formatMoney(product.price)}
