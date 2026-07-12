@@ -193,6 +193,9 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
         console.log("Server: Resend customer receipt response:", customerRes.status, customerData);
       }
 
+      // Wait 1.2 seconds to avoid Resend rate limit (429) on free/test accounts
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
       // 2. Dispatch notification email to store owner
       if (ownerEmail) {
         const ownerRes = await fetch("https://api.resend.com/emails", {
