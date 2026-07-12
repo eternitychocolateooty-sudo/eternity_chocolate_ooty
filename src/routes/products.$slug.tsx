@@ -61,7 +61,9 @@ function ProductDetails() {
 
   useEffect(() => {
     setSelectedVariantIndex(0);
-  }, [product.id]);
+    setActiveImage(product.images[0]);
+    setQuantity(1);
+  }, [product.id, product.images]);
 
   const baseActivePrice = product.sale_price !== undefined ? product.sale_price : product.price;
   const parsedVariants = useMemo(() => {
