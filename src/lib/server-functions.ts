@@ -182,7 +182,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 
                 <div style="margin-top: 32px; font-size: 0.8em; color: #8D6E63; text-align: center; border-top: 1px solid #EFEBE9; padding-top: 20px; line-height: 1.6;">
                   <strong>ETERNITY Artisan Chocolate Boutique</strong><br/>
-                  No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001<br/>
+                  no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001<br/>
                   Need help? Reply to this email or contact support.
                 </div>
               </div>

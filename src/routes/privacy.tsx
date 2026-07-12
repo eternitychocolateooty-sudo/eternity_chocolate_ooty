@@ -119,7 +119,7 @@ function PrivacyPolicy() {
               <li>Withdraw consent for data usage</li>
             </ul>
             <p>To exercise these rights, contact us at:</p>
-            <p className="text-accent font-semibold">Email: a2zsmart2025@gmail.com</p>
+            <p className="text-accent font-semibold">Email: eternitychocolateooty@gmail.com</p>
           </div>
 
           <div className="space-y-4">

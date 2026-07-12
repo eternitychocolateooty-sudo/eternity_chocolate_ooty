@@ -36,7 +36,7 @@ function Collections() {
   const isLoading = cart.isLoadingProducts;
   const [active, setActive] = useState<(typeof categories)[number]>("All");
   const [query, setQuery] = useState("");
-  const [price, setPrice] = useState(1200);
+  const [price, setPrice] = useState(6000);
   const [sort, setSort] = useState<SortKey>("popular");
 
   const filtered = useMemo(() => {
@@ -83,8 +83,8 @@ function Collections() {
             <input
               type="range"
               min={300}
-              max={1200}
-              step={50}
+              max={6000}
+              step={100}
               value={price}
               onChange={(event) => setPrice(Number(event.target.value))}
             />
@@ -196,7 +196,7 @@ function Collections() {
               onClick={() => {
                 setQuery("");
                 setActive("All");
-                setPrice(1200);
+                setPrice(6000);
               }}
               className="mt-5 rounded-full bg-primary px-6 py-3 text-primary-foreground"
             >

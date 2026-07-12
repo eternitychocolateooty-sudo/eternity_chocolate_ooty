@@ -9,6 +9,7 @@ import {
   Leaf,
   Award,
   Clock,
+  Star,
 } from "lucide-react";
 import heroImg from "@/assets/hero-chocolate.jpg";
 import processImg from "@/assets/process.jpg";
@@ -354,28 +355,53 @@ function Home() {
               Words from our regulars.
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
-                name: "Aarav, Bengaluru",
-                quote: "I plan my Ooty trips around the dark almond bark. Nothing else compares.",
+                name: "Abhishek Rana",
+                stars: 5,
+                time: "2 years ago",
+                quote: "Your one stop shop for shopping in Ooty. Be it authentic ooty chocolates, fridge magnets, spices or medicinal n essential oils .. they have evething !! And what quality. 🌟 Must visit ! 👍",
               },
               {
-                name: "Mira, Coimbatore",
-                quote:
-                  "We sent their gift boxes to twenty cousins. Twenty thank-you calls came back.",
+                name: "m.r.digital roy",
+                stars: 5,
+                time: "a year ago",
+                quote: "Premium quality chocolate . Quality of the chocolate is so good . Must try . Staffs are so friendly .I had my best experience in the shop",
               },
               {
-                name: "James, Chennai",
-                quote: "A boutique that feels like a memory. The hot chocolate is sublime.",
+                name: "DS",
+                stars: 4,
+                time: "a year ago",
+                quote: "Nice chocolate shop located in the centre of the city. They have all kinds of homemade chocolates, jelly, large lollipops and many more things available. I would definitely recommend getting the chocolate covered cookies. These were superb.",
+              },
+              {
+                name: "Deepak Verma",
+                stars: 5,
+                time: "5 months ago",
+                quote: "Lot of good verity spies, chocolates, oils , tea powder & coffee beans all very good and pure veg",
               },
             ].map((t, i) => (
-              <figure key={i} className="rounded-3xl glass p-8 shadow-soft">
-                <Quote className="h-6 w-6 text-accent mb-4" />
-                <blockquote className="font-display text-xl leading-snug">"{t.quote}"</blockquote>
-                <figcaption className="mt-5 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  — {t.name}
-                </figcaption>
+              <figure key={i} className="rounded-3xl glass p-6 shadow-soft flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1 text-accent mb-3">
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <Star
+                        key={idx}
+                        className={`h-3.5 w-3.5 ${idx < t.stars ? "fill-current" : "text-muted-foreground/20"}`}
+                      />
+                    ))}
+                  </div>
+                  <blockquote className="font-display text-sm leading-relaxed text-foreground">
+                    "{t.quote}"
+                  </blockquote>
+                </div>
+                <div className="mt-6 flex justify-between items-center border-t border-border/30 pt-4">
+                  <figcaption className="text-[11px] font-semibold text-foreground">
+                    {t.name}
+                  </figcaption>
+                  <span className="text-[9px] text-muted-foreground">{t.time}</span>
+                </div>
               </figure>
             ))}
           </div>
@@ -392,7 +418,7 @@ function Home() {
             {[g5, g1, processImg, g3].map((img, i) => (
               <a
                 key={i}
-                href="https://instagram.com"
+                href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                 target="_blank"
                 rel="noreferrer noopener"
                 className="group relative overflow-hidden rounded-2xl aspect-square"
@@ -422,7 +448,7 @@ function Home() {
               Open daily, from morning mist to evening glow.
             </h2>
             <p className="mt-4 text-[oklch(0.96_0.018_80/0.7)] relative">
-              Open · 9 am Closes 10:30 pm · no 7,8, bharathiyar complex, charring. cross, Upper Bazar, Ooty, Tamil Nadu 643001
+              Open · 9 am Closes 10:30 pm · no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001
             </p>
             <Link
               to="/visit"

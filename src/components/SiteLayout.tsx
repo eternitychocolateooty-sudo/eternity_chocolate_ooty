@@ -304,15 +304,15 @@ function StickySocials() {
   return (
     <div className="hidden lg:flex flex-col gap-3 fixed right-5 top-1/2 -translate-y-1/2 z-40">
       {[
-        { Icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-        { Icon: Facebook, href: "https://facebook.com", label: "Facebook" },
+        { Icon: Instagram, href: "https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==", label: "Instagram" },
+        { Icon: Facebook, href: "#", label: "Facebook" },
         { Icon: MessageCircle, href: "https://wa.me/918489462100", label: "WhatsApp" },
       ].map(({ Icon, href, label }) => (
         <a
           key={label}
           href={href}
-          target="_blank"
-          rel="noreferrer noopener"
+          target={href === "#" ? undefined : "_blank"}
+          rel={href === "#" ? undefined : "noreferrer noopener"}
           aria-label={label}
           className="grid h-10 w-10 place-items-center rounded-full glass shadow-soft hover:bg-accent hover:text-accent-foreground transition-all hover:-translate-y-0.5"
         >
@@ -338,7 +338,7 @@ function Footer() {
           </p>
           <div className="mt-6 flex gap-3">
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
               target="_blank"
               rel="noreferrer noopener"
               aria-label="Instagram"
@@ -347,9 +347,7 @@ function Footer() {
               <Instagram className="h-4 w-4" />
             </a>
             <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noreferrer noopener"
+              href="#"
               aria-label="Facebook"
               className="grid h-10 w-10 place-items-center rounded-full border border-[oklch(0.94_0.02_80/0.2)] hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
             >
@@ -382,7 +380,7 @@ function Footer() {
           <h4 className="font-display text-lg mb-4">Visit</h4>
           <ul className="space-y-3 text-sm text-[oklch(0.94_0.02_80/0.7)]">
             <li className="flex gap-2">
-              <MapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" /> no 7,8, bharathiyar complex, charring. cross, Upper Bazar, Ooty, Tamil Nadu 643001
+              <MapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" /> no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001
             </li>
             <li className="flex gap-2">
               <Phone className="h-4 w-4 text-accent shrink-0 mt-0.5" /> 084894 62100

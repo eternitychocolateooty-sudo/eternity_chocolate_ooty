@@ -47,7 +47,7 @@ function Visit() {
             {
               Icon: MapPin,
               label: "The Boutique",
-              lines: ["no 7,8, bharathiyar complex, charring. cross", "Upper Bazar, Ooty", "Tamil Nadu 643001"],
+              lines: ["no 7,8, bharathiyar complex, charring. cross", "Ooty", "Tamil Nadu 643001"],
             },
             { Icon: Clock, label: "Hours", lines: ["Open", "9:00 am – 10:30 pm"] },
             { Icon: Phone, label: "Call us", lines: ["084894 62100"] },
@@ -78,7 +78,7 @@ function Visit() {
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
               target="_blank"
               rel="noreferrer noopener"
               className="grid h-12 w-12 place-items-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
@@ -86,9 +86,7 @@ function Visit() {
               <Instagram className="h-4 w-4" />
             </a>
             <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noreferrer noopener"
+              href="#"
               className="grid h-12 w-12 place-items-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
             >
               <Facebook className="h-4 w-4" />
@@ -106,13 +104,28 @@ function Visit() {
             Loved our chocolates? Share your experience with other travellers and chocolate lovers by writing a review on our Google Maps profile.
           </p>
           <a
-            href="https://www.google.com/maps/search/?api=1&query=Eternity+Supper+Market+Charing+Cross+Ooty"
+            href="https://www.google.com/maps/place/Eternity/@11.4117425,76.7079431,17z/data=!3m1!4b1!4m6!3m5!1s0x3ba8bd3d37413427:0x8ca83f52da071d57!8m2!3d11.4117425!4d76.7079431!16s%2Fg%2F11qwsqsgh8!5m1!1e1?entry=ttu&g_ep=EgoyMDI2MDcwOC4wIKXMDSoASAFQAw%3D%3D"
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-3 rounded-full bg-gradient-gold px-8 py-4 text-[oklch(0.22_0.035_50)] font-semibold shadow-gold hover:-translate-y-0.5 transition-all"
+            className="inline-flex items-center gap-3 rounded-full bg-gradient-gold px-8 py-4 text-[oklch(0.22_0.035_50)] font-semibold shadow-gold hover:-translate-y-0.5 transition-all mb-8"
           >
             <Star className="h-5 w-5 fill-current" /> Write a Review
           </a>
+
+          {/* BEST REVIEW OUT OF FOUR */}
+          <div className="max-w-md border-t border-border/30 pt-6 w-full text-center">
+            <div className="flex justify-center text-accent gap-0.5 mb-2">
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <Star className="h-3.5 w-3.5 fill-current" />
+            </div>
+            <blockquote className="text-sm font-medium italic text-muted-foreground mb-3">
+              "Your one stop shop for shopping in Ooty. Be it authentic ooty chocolates, fridge magnets, spices or medicinal n essential oils .. they have evething !! And what quality. Must visit !"
+            </blockquote>
+            <p className="text-xs uppercase tracking-[0.15em] text-accent font-semibold">— Abhishek Rana</p>
+          </div>
         </div>
       </section>
 
@@ -121,7 +134,7 @@ function Visit() {
         <div className="rounded-3xl overflow-hidden shadow-luxe border border-border">
           <iframe
             title="ETERNITY location, Ooty"
-            src="https://maps.google.com/maps?q=Eternity,+no+7,8,+bharathiyar+complex,+charring.+cross,+Upper+Bazar,+Ooty,+Tamil+Nadu+643001&t=&z=17&ie=UTF8&iwloc=&output=embed"
+            src="https://maps.google.com/maps?q=Eternity,+no+7,8,+bharathiyar+complex,+charring.+cross,+Ooty,+Tamil+Nadu+643001&t=&z=17&ie=UTF8&iwloc=&output=embed"
             className="w-full h-[460px] block"
             loading="lazy"
           />

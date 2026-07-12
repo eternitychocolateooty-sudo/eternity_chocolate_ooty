@@ -80,7 +80,7 @@ function RefundPolicy() {
             <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm">
               <li><strong>Email:</strong> eternitychocolateooty@gmail.com</li>
               <li><strong>Phone:</strong> 084894 62100</li>
-              <li><strong>Address:</strong> No 7,8, Bharathiyar Complex, Charring Cross, Upper Bazar, Ooty, Tamil Nadu 643001</li>
+              <li><strong>Address:</strong> no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001</li>
             </ul>
           </div>
         </div>
