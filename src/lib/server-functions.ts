@@ -20,6 +20,49 @@ function parseVariant(variantStr: string, basePrice: number) {
   return { name: variantStr.trim(), price: basePrice };
 }
 
+function parseWeightToGrams(weightStr: string): number {
+  if (!weightStr) return 0;
+  const clean = weightStr.toLowerCase().replace(/\s+/g, "");
+  const match = clean.match(/^([\d.]+)(kg|g)?$/);
+  if (!match) {
+    const numMatch = clean.match(/^([\d.]+)/);
+    return numMatch ? parseFloat(numMatch[1]) : 0;
+  }
+  const val = parseFloat(match[1]);
+  const unit = match[2] || "g";
+  if (unit === "kg") {
+    return val * 1000;
+  }
+  return val;
+}
+
+function calculateShippingFee(subtotal: number, state: string, totalWeightKg: number): number {
+  if (subtotal >= 3000 || subtotal === 0) {
+    return 0;
+  }
+
+  const cleanState = (state || "").toLowerCase().replace(/\s+/g, "");
+  const isTamilNadu = cleanState === "tamilnadu";
+
+  if (isTamilNadu) {
+    if (totalWeightKg <= 0.1) return 70;
+    if (totalWeightKg <= 0.5) return 100;
+    if (totalWeightKg <= 1.0) return 130;
+    if (totalWeightKg <= 2.0) return 180;
+    if (totalWeightKg <= 5.0) return 290;
+    const extraKg = Math.ceil(totalWeightKg - 5);
+    return 290 + (extraKg * 40);
+  } else {
+    if (totalWeightKg <= 0.1) return 110;
+    if (totalWeightKg <= 0.5) return 150;
+    if (totalWeightKg <= 1.0) return 185;
+    if (totalWeightKg <= 2.0) return 250;
+    if (totalWeightKg <= 5.0) return 400;
+    const extraKg = Math.ceil(totalWeightKg - 5);
+    return 400 + (extraKg * 55);
+  }
+}
+
 export interface CustomerInfo {
   email: string;
   name: string;
@@ -280,8 +323,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       throw new Error(`Failed to retrieve product data: ${fetchErr?.message || "Unknown error"}`);
     }
 
-    // Securely calculate checkout subtotal
+    // Securely calculate checkout subtotal and total weight
     let subtotal = 0;
+    let totalGrams = 0;
     for (const item of items) {
       const prod = dbProducts.find((p) => p.id === item.productId);
       if (!prod) {
@@ -300,9 +344,21 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         }
       }
       subtotal += price * item.quantity;
+
+      // Parse weight for shipping fee
+      let itemWeightStr = prod.weight;
+      if (item.selectedVariant) {
+        const weightGrams = parseWeightToGrams(item.selectedVariant);
+        if (weightGrams > 0) {
+          totalGrams += weightGrams * item.quantity;
+          continue;
+        }
+      }
+      totalGrams += parseWeightToGrams(itemWeightStr) * item.quantity;
     }
 
-    const shippingFee = subtotal > 1500 || subtotal === 0 ? 0 : 120;
+    const totalWeightKg = totalGrams / 1000;
+    const shippingFee = calculateShippingFee(subtotal, shippingAddress.state, totalWeightKg);
     const tax = 0;
     const total = subtotal + shippingFee;
 

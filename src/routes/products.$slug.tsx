@@ -231,7 +231,7 @@ function ProductDetails() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {[
-                { Icon: Truck, title: "Ooty dispatch", text: "Packed cold and shipped with care." },
+                { Icon: Truck, title: "Ooty dispatch", text: "Packed cold. Free shipping above ₹3000!" },
                 {
                   Icon: ShieldCheck,
                   title: "Secure payment",

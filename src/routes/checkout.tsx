@@ -218,6 +218,12 @@ function Checkout() {
     }
   }, [user, profile]);
 
+  useEffect(() => {
+    if (stateField) {
+      cart.setShippingState(stateField);
+    }
+  }, [stateField, cart.setShippingState]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     console.log("Client: handleSubmit started");

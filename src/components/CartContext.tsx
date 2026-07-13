@@ -57,6 +57,8 @@ type CartContextValue = {
   count: number;
   products: Product[];
   isLoadingProducts: boolean;
+  shippingState: string;
+  setShippingState: (state: string) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -66,6 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user, loading: loadingAuth } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [hasSynced, setHasSynced] = useState(false);
+  const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
   // Fetch live products from database using React Query
   const { data: dbProducts = [], isLoading: isLoadingProducts } = useQuery<Product[]>({
@@ -313,7 +316,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, 0);
   }, [items, dbProducts]);
 
-  const shipping = subtotal > 1500 || subtotal === 0 ? 0 : 120;
+  const totalWeightKg = useMemo(() => {
+    const totalGrams = items.reduce((sum, item) => {
+      const product = dbProducts.find((p) => p.id === item.productId);
+      if (!product) return sum;
+
+      let itemWeightStr = product.weight;
+      if (item.selectedVariant) {
+        const weightGrams = parseWeightToGrams(item.selectedVariant);
+        if (weightGrams > 0) {
+          return sum + (weightGrams * item.quantity);
+        }
+      }
+      return sum + (parseWeightToGrams(itemWeightStr) * item.quantity);
+    }, 0);
+    return totalGrams / 1000;
+  }, [items, dbProducts]);
+
+  const shipping = useMemo(() => {
+    return calculateShippingFee(subtotal, shippingState, totalWeightKg);
+  }, [subtotal, shippingState, totalWeightKg]);
+
   const tax = 0;
   const total = subtotal + shipping;
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -333,11 +356,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
         count,
         products: dbProducts,
         isLoadingProducts,
+        shippingState,
+        setShippingState,
       }}
     >
       {children}
     </CartContext.Provider>
   );
+}
+
+function parseWeightToGrams(weightStr: string): number {
+  if (!weightStr) return 0;
+  const clean = weightStr.toLowerCase().replace(/\s+/g, "");
+  const match = clean.match(/^([\d.]+)(kg|g)?$/);
+  if (!match) {
+    const numMatch = clean.match(/^([\d.]+)/);
+    return numMatch ? parseFloat(numMatch[1]) : 0;
+  }
+  const val = parseFloat(match[1]);
+  const unit = match[2] || "g";
+  if (unit === "kg") {
+    return val * 1000;
+  }
+  return val;
+}
+
+function calculateShippingFee(subtotal: number, state: string, totalWeightKg: number): number {
+  if (subtotal >= 3000 || subtotal === 0) {
+    return 0;
+  }
+
+  const cleanState = (state || "").toLowerCase().replace(/\s+/g, "");
+  const isTamilNadu = cleanState === "tamilnadu";
+
+  if (isTamilNadu) {
+    if (totalWeightKg <= 0.1) return 70;
+    if (totalWeightKg <= 0.5) return 100;
+    if (totalWeightKg <= 1.0) return 130;
+    if (totalWeightKg <= 2.0) return 180;
+    if (totalWeightKg <= 5.0) return 290;
+    const extraKg = Math.ceil(totalWeightKg - 5);
+    return 290 + (extraKg * 40);
+  } else {
+    if (totalWeightKg <= 0.1) return 110;
+    if (totalWeightKg <= 0.5) return 150;
+    if (totalWeightKg <= 1.0) return 185;
+    if (totalWeightKg <= 2.0) return 250;
+    if (totalWeightKg <= 5.0) return 400;
+    const extraKg = Math.ceil(totalWeightKg - 5);
+    return 400 + (extraKg * 55);
+  }
 }
 
 export function useCart() {
