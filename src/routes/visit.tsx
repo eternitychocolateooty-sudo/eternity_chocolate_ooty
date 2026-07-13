@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Phone, Clock, Instagram, Facebook, MessageCircle, Mail, Star } from "lucide-react";
+import { MapPin, Phone, Clock, Instagram, MessageCircle, Mail, Star } from "lucide-react";
 import storeImg from "@/assets/store.jpg";
 
 export const Route = createFileRoute("/visit")({
@@ -129,12 +129,6 @@ function Visit() {
               className="grid h-12 w-12 place-items-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
             >
               <Instagram className="h-4 w-4" />
-            </a>
-            <a
-              href="#"
-              className="grid h-12 w-12 place-items-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
-            >
-              <Facebook className="h-4 w-4" />
             </a>
           </div>
         </div>

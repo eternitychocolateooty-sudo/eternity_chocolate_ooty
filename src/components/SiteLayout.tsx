@@ -1,7 +1,6 @@
 import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Facebook,
   Instagram,
   MapPin,
   MessageCircle,
@@ -305,7 +304,6 @@ function StickySocials() {
     <div className="hidden lg:flex flex-col gap-3 fixed right-5 top-1/2 -translate-y-1/2 z-40">
       {[
         { Icon: Instagram, href: "https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==", label: "Instagram" },
-        { Icon: Facebook, href: "#", label: "Facebook" },
         { Icon: MessageCircle, href: "https://wa.me/918489462100", label: "WhatsApp" },
       ].map(({ Icon, href, label }) => (
         <a
@@ -345,13 +343,6 @@ function Footer() {
               className="grid h-10 w-10 place-items-center rounded-full border border-[oklch(0.94_0.02_80/0.2)] hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
             >
               <Instagram className="h-4 w-4" />
-            </a>
-            <a
-              href="#"
-              aria-label="Facebook"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[oklch(0.94_0.02_80/0.2)] hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
-            >
-              <Facebook className="h-4 w-4" />
             </a>
             <a
               href="https://wa.me/918489462100"

@@ -39,17 +39,14 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminConsole() {
-  const [activeTab, setActiveTab] = useState<"catalog" | "orders" | "feedbacks">("catalog");
+  const [activeTab, setActiveTab] = useState<"catalog" | "orders">("catalog");
 
   // Data states
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  
   // Loading states
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
 
   // Form states
   const [showAddForm, setShowAddForm] = useState(false);
@@ -148,25 +145,9 @@ function AdminConsole() {
     }
   };
 
-  const fetchFeedbacks = async () => {
-    setLoadingFeedbacks(true);
-    try {
-      const { data, error } = await supabase
-        .from("feedbacks")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (!error) setFeedbacks(data || []);
-    } catch (err) {
-      console.error("Feedbacks load failed:", err);
-    } finally {
-      setLoadingFeedbacks(false);
-    }
-  };
-
   useEffect(() => {
     fetchProducts();
     fetchOrders();
-    fetchFeedbacks();
   }, []);
 
   // Sync slug with name when typing
@@ -353,17 +334,16 @@ function AdminConsole() {
       <section className="container mx-auto px-6 py-16 md:py-24">
         <p className="text-sm uppercase tracking-[0.3em] text-accent">Admin Console</p>
         <h1 className="mt-4 font-display text-5xl md:text-7xl text-balance">
-          Operations, catalog, orders, and feedbacks console.
+          Operations, catalog, and orders console.
         </h1>
       </section>
 
       <section className="container mx-auto px-6">
         {/* Metric Cards Banner */}
-        <div className="grid gap-5 md:grid-cols-4 mb-10">
+        <div className="grid gap-5 md:grid-cols-3 mb-10">
           {[
             { Icon: IndianRupee, label: "Revenue", value: formatMoney(totalRevenue) },
             { Icon: PackageCheck, label: "Paid Orders", value: String(paidOrdersCount) },
-            { Icon: Users, label: "Total Feedbacks", value: String(feedbacks.length) },
             { Icon: Boxes, label: "Active SKUs", value: String(activeSkus) },
           ].map(({ Icon, label, value }) => (
             <div key={label} className="rounded-3xl bg-card p-6 shadow-soft border border-border/50">
@@ -374,12 +354,10 @@ function AdminConsole() {
           ))}
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex border-b border-border mb-8 gap-6">
           {[
             { id: "catalog", label: "Product Catalog", Icon: Boxes },
             { id: "orders", label: "Orders Fulfillment", Icon: ShoppingBag },
-            { id: "feedbacks", label: "Customer Feedbacks", Icon: Star },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -771,54 +749,6 @@ function AdminConsole() {
           </div>
         )}
 
-            {/* 3. FEEDBACKS TAB */}
-            {activeTab === "feedbacks" && (
-              <div>
-                <h2 className="font-display text-2xl mb-6">Customer Reviews & Feedbacks</h2>
-
-                {loadingFeedbacks ? (
-                  <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-accent" /></div>
-                ) : feedbacks.length === 0 ? (
-                  <p className="text-center py-12 text-muted-foreground text-sm border border-dashed border-border rounded-2xl">No feedbacks found.</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {feedbacks.map((fb) => (
-                      <div key={fb.id} className="rounded-2xl border border-border p-5 bg-card shadow-soft flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center text-accent">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${i < fb.rating ? "fill-current" : "text-muted/40"}`}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                              {new Date(fb.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          <blockquote className="text-sm font-medium italic text-foreground mb-4">
-                            "{fb.message}"
-                          </blockquote>
-                        </div>
-
-                        <div className="border-t border-border pt-3 flex items-center gap-2">
-                          <div className="grid h-8 w-8 place-items-center rounded-full bg-secondary">
-                            <User className="h-3.5 w-3.5 text-accent" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">{fb.name || "Anonymous Guest"}</p>
-                            <p className="text-[10px] text-muted-foreground">{fb.email || "No email"}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
       </section>
     </div>
   );
