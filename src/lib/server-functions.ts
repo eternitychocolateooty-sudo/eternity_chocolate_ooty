@@ -293,7 +293,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       let price = prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price);
       if (item.selectedVariant) {
         const matchingVariantStr = prod.variants?.find(
-          (v: string) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+          (v: string) => parseVariant(v, price).name === item.selectedVariant
         );
         if (matchingVariantStr) {
           price = parseVariant(matchingVariantStr, price).price;

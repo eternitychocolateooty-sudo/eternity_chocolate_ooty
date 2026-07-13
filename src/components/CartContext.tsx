@@ -303,7 +303,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       let price = product.sale_price !== undefined ? product.sale_price : product.price;
       if (item.selectedVariant) {
         const matchingVariantStr = product.variants?.find(
-          (v) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+          (v) => parseVariant(v, price).name === item.selectedVariant
         );
         if (matchingVariantStr) {
           price = parseVariant(matchingVariantStr, price).price;

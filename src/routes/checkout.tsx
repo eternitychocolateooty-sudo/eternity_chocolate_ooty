@@ -395,7 +395,7 @@ function Checkout() {
                 let base = product.sale_price !== undefined ? product.sale_price : product.price;
                 if (item.selectedVariant) {
                   const matchingVariantStr = product.variants?.find(
-                    (v) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
+                    (v) => parseVariant(v, base).name === item.selectedVariant
                   );
                   if (matchingVariantStr) {
                     base = parseVariant(matchingVariantStr, base).price;
