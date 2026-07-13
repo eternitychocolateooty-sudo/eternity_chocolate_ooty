@@ -38,6 +38,53 @@ export const Route = createFileRoute("/admin")({
   component: AdminConsole,
 });
 
+const compressImage = (file: File, maxW = 1200, maxH = 1200, quality = 0.85): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxW) {
+            height = Math.round((height * maxW) / width);
+            width = maxW;
+          }
+        } else {
+          if (height > maxH) {
+            width = Math.round((width * maxH) / height);
+            height = maxH;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Canvas conversion to Blob failed"));
+            }
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 function AdminConsole() {
   const [activeTab, setActiveTab] = useState<"catalog" | "orders">("catalog");
 
@@ -189,11 +236,24 @@ function AdminConsole() {
       // 1. Upload new images and construct list of URLs
       for (const item of imagesList) {
         if (item.file) {
-          const fileExt = item.file.name.split(".").pop();
+          let fileToUpload: File | Blob = item.file;
+          let fileExt = item.file.name.split(".").pop() || "jpg";
+
+          if (item.file.type.startsWith("image/")) {
+            try {
+              fileToUpload = await compressImage(item.file, 1200, 1200, 0.85);
+              fileExt = "jpg";
+            } catch (err) {
+              console.error("Image compression failed, using original file:", err);
+            }
+          }
+
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
           const { error: uploadErr } = await supabase.storage
             .from("product-images")
-            .upload(fileName, item.file);
+            .upload(fileName, fileToUpload, {
+              contentType: fileExt === "jpg" ? "image/jpeg" : item.file.type
+            });
 
           if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
 
