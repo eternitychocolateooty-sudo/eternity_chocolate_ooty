@@ -52,6 +52,51 @@ function Home() {
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Store",
+            "name": "ETERNITY Handcrafted Chocolates",
+            "image": "https://eternitychocolateooty.com/assets/logo.png",
+            "@id": "https://eternitychocolateooty.com/#store",
+            "url": "https://eternitychocolateooty.com",
+            "telephone": "084894 62100",
+            "priceRange": "$$",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
+              "addressLocality": "Ooty",
+              "addressRegion": "Tamil Nadu",
+              "postalCode": "643001",
+              "addressCountry": "IN"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 11.4116,
+              "longitude": 76.7088
+            },
+            "openingHoursSpecification": {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ],
+              "opens": "09:00",
+              "closes": "22:30"
+            },
+            "sameAs": [
+              "https://www.instagram.com/eternitychocolateooty/"
+            ]
+          })
+        }}
+      />
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">

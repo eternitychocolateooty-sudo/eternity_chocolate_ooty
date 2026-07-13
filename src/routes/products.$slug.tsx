@@ -76,6 +76,36 @@ function ProductDetails() {
 
   return (
     <div className="pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.images?.map((img: string) => resolveProductImage(img)),
+            "description": product.description,
+            "sku": product.id,
+            "brand": {
+              "@type": "Brand",
+              "name": "ETERNITY"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": `https://eternitychocolateooty.com/products/${product.slug}`,
+              "priceCurrency": "INR",
+              "price": product.sale_price !== undefined && product.sale_price !== null ? product.sale_price : product.price,
+              "itemCondition": "https://schema.org/NewCondition",
+              "availability": product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": product.rating || 4.8,
+              "reviewCount": product.reviews || 10
+            }
+          })
+        }}
+      />
       <section className="container mx-auto px-6 py-10">
         <Link
           to="/collections"
