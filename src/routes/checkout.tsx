@@ -42,6 +42,66 @@ function Input({ label, className = "", ...props }: any) {
   );
 }
 
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry"
+];
+
+function SelectInput({ label, options, className = "", ...props }: any) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-accent">
+        {label}
+      </span>
+      <select
+        className="w-full border-b border-border bg-transparent py-2 text-sm outline-none transition-colors focus:border-accent cursor-pointer text-foreground"
+        {...props}
+      >
+        <option value="" className="bg-card text-muted-foreground">Select state</option>
+        {options.map((opt: string) => (
+          <option key={opt} value={opt} className="bg-card text-foreground">
+            {opt}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div className={`flex justify-between ${bold ? "font-display text-2xl" : "text-sm"}`}>
@@ -349,10 +409,11 @@ function Checkout() {
                     onChange={(e: any) => setCity(e.target.value)}
                     required
                   />
-                  <Input
+                  <SelectInput
                     label="State"
                     value={stateField}
                     onChange={(e: any) => setStateField(e.target.value)}
+                    options={INDIAN_STATES}
                     required
                   />
                   <Input
