@@ -38,7 +38,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminConsole,
 });
 
-const compressImage = (file: File, maxW = 1200, maxH = 1200, quality = 0.85): Promise<Blob> => {
+const compressImage = (file: File, maxW = 1600, maxH = 1600, quality = 0.90): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -241,7 +241,7 @@ function AdminConsole() {
 
           if (item.file.type.startsWith("image/")) {
             try {
-              fileToUpload = await compressImage(item.file, 1200, 1200, 0.85);
+              fileToUpload = await compressImage(item.file, 1600, 1600, 0.90);
               fileExt = "jpg";
             } catch (err) {
               console.error("Image compression failed, using original file:", err);
