@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 
 export const Route = createFileRoute("/refund")({
   head: () => ({
@@ -18,15 +19,14 @@ function RefundPolicy() {
     <div className="pb-24">
       {/* HEADER HERO */}
       <section className="container mx-auto px-6 py-16 md:py-24 text-center">
-        <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Legal Policy</p>
-        <h1 className="font-display text-5xl md:text-6xl text-balance max-w-3xl mx-auto">
+        <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Store Policies</p>
+        <h1 className="font-display text-5xl md:text-7xl">
           Refund & Cancellation
         </h1>
-        <p className="mt-4 text-muted-foreground text-sm">Last Updated: July 2026</p>
       </section>
 
-      {/* CONTENT */}
-      <section className="container mx-auto px-6 max-w-3xl">
+      {/* POLICY TEXT */}
+      <section className="container mx-auto px-6 max-w-4xl">
         <div className="prose prose-invert max-w-none space-y-8 text-[oklch(0.94_0.02_80/0.8)] leading-relaxed">
           <p>
             Thank you for shopping at <strong>ETERNITY</strong>. Because our products are handcrafted food items, we maintain clear guidelines regarding returns, cancellations, and refunds to ensure a fair and safe experience.
@@ -38,7 +38,7 @@ function RefundPolicy() {
               You can request an order cancellation and receive a full refund only if the order has <strong>not yet been shipped</strong>.
             </p>
             <p>
-              Once a package is handed over to our courier partner and a tracking number is generated, the order cannot be cancelled or recalled due to the perishable nature of artisan chocolates. To cancel an order before shipping, please contact us immediately at <strong>084894 62100</strong> or email us at <strong>eternitychocolateooty@gmail.com</strong> with your Order ID.
+              Once a package is handed over to our courier partner and a tracking number is generated, the order cannot be cancelled or recalled due to the perishable nature of artisan chocolates. To cancel an order before shipping, please contact us immediately at <strong>084894 62100</strong> or email us at <strong><EmailObfuscator /></strong> with your Order ID.
             </p>
           </div>
 
@@ -78,7 +78,7 @@ function RefundPolicy() {
               If you have any questions or need assistance with an order, refund, or replacement, please contact us at:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm">
-              <li><strong>Email:</strong> eternitychocolateooty@gmail.com</li>
+              <li><strong>Email:</strong> <EmailObfuscator /></li>
               <li><strong>Phone:</strong> 084894 62100</li>
               <li><strong>Address:</strong> no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001</li>
             </ul>

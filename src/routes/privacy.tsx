@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -22,91 +23,50 @@ function PrivacyPolicy() {
         <h1 className="font-display text-5xl md:text-6xl text-balance max-w-3xl mx-auto">
           Privacy Policy
         </h1>
+        <p className="mt-4 text-muted-foreground text-sm">Last Updated: July 2026</p>
       </section>
 
       {/* CONTENT */}
       <section className="container mx-auto px-6 max-w-3xl">
-        <div className="prose prose-invert max-w-none space-y-8 text-[oklch(0.94_0.02_80/0.8)] leading-relaxed text-left">
+        <div className="prose prose-invert max-w-none space-y-8 text-[oklch(0.94_0.02_80/0.8)] leading-relaxed">
           <p>
-            At <strong>Eternity</strong>,{" "}
-            <a
-              href="https://eternitychocolateooty.in/"
-              className="text-accent underline"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              https://eternitychocolateooty.in/
-            </a>
-            , we value your privacy and are committed to safeguarding your personal information. This
-            Privacy Policy outlines how we collect, use, disclose, and protect your data when you
-            visit or make a purchase from our website.
+            At <strong>ETERNITY</strong>, accessible from <a href="https://eternitychocolateooty.in" className="text-accent underline" target="_blank" rel="noreferrer noopener">https://eternitychocolateooty.in</a>, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by ETERNITY and how we use it.
           </p>
-          <p>By using our website, you agree to the terms described in this policy.</p>
 
           <div className="space-y-4">
             <h2 className="font-display text-2xl text-foreground mt-8">1. Information We Collect</h2>
-            <p>To provide a seamless shopping experience, we may collect the following types of information:</p>
-            
-            <h3 className="font-display text-lg text-foreground mt-4 font-semibold">a) Personal Information</h3>
-            <p>When you interact with our website (place orders, sign up, or contact us), we may collect:</p>
+            <p>We collect information you provide directly to us when you make a purchase, create an account, or contact us. This may include:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Full Name</li>
-              <li>Email Address</li>
-              <li>Phone Number</li>
-              <li>Shipping & Billing Address</li>
-              <li>Payment Details (processed securely via third-party gateways)</li>
-            </ul>
-
-            <h3 className="font-display text-lg text-foreground mt-4 font-semibold">b) Non-Personal Information</h3>
-            <p>We may automatically collect:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>IP Address</li>
-              <li>Browser Type & Device Information</li>
-              <li>Pages Visited and Time Spent</li>
-              <li>Cookies and Usage Data</li>
+              <li>Name, email address, phone number, and billing/shipping address</li>
+              <li>Order details and transaction history</li>
+              <li>Google account metadata if you choose to sign in via Google OAuth</li>
             </ul>
           </div>
 
           <div className="space-y-4">
             <h2 className="font-display text-2xl text-foreground mt-8">2. How We Use Your Information</h2>
-            <p>We use the collected data for the following purposes:</p>
+            <p>We use the information we collect in various ways, including to:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>To process and deliver your orders</li>
-              <li>To provide customer support and respond to queries</li>
-              <li>To send order updates and service-related notifications</li>
-              <li>To send promotional emails/offers (you can opt out anytime)</li>
-              <li>To improve website performance and user experience</li>
-              <li>To comply with legal obligations</li>
+              <li>Process transactions and send order confirmations/invoices</li>
+              <li>Communicate updates, delivery schedules, and support alerts</li>
+              <li>Improve and personalize your online shopping experience</li>
+              <li>Analyze web traffic metrics to enhance our site performance</li>
             </ul>
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">3. Cookies and Tracking Technologies</h2>
-            <p>We use cookies and similar technologies to enhance your browsing experience. Cookies help us:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Remember user preferences</li>
-              <li>Analyze website traffic</li>
-              <li>Improve functionality</li>
-            </ul>
-            <p>You can disable cookies anytime through your browser settings.</p>
+            <h2 className="font-display text-2xl text-foreground mt-8">3. Web Security and Storage</h2>
+            <p>We process payments securely via standardized third-party checkout gateways (Cashfree). Your sensitive credit card or UPI details are never stored on our database servers. We use safe, encrypted SSL protocols to transmit user information.</p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">4. Data Security</h2>
-            <p>We implement industry-standard security measures to protect your personal data from unauthorized access, misuse, or disclosure.</p>
-            <p>However, please note:</p>
-            <p className="italic text-muted-foreground">No method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.</p>
+            <h2 className="font-display text-2xl text-foreground mt-8">4. Cookies and Web Beacons</h2>
+            <p>Like any other website, ETERNITY uses cookies. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.</p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">5. Sharing of Information</h2>
-            <p>We do not sell or rent your personal data. However, we may share your information in the following cases:</p>
-            
-            <h3 className="font-display text-lg text-foreground mt-4 font-semibold">a) Service Providers</h3>
-            <p>Trusted third parties (such as payment gateways, logistics partners, and marketing tools) to complete your orders.</p>
-
-            <h3 className="font-display text-lg text-foreground mt-4 font-semibold">b) Legal Requirements</h3>
-            <p>If required by law or to protect our legal rights and prevent fraud.</p>
+            <h2 className="font-display text-2xl text-foreground mt-8">5. Share of Information</h2>
+            <p>We do not share your private contact information or purchase data with unrelated third parties. We share shipping metadata with courier partners solely to enable order delivery.</p>
           </div>
 
           <div className="space-y-4">
@@ -119,7 +79,7 @@ function PrivacyPolicy() {
               <li>Withdraw consent for data usage</li>
             </ul>
             <p>To exercise these rights, contact us at:</p>
-            <p className="text-accent font-semibold">Email: eternitychocolateooty@gmail.com</p>
+            <p className="text-accent font-semibold">Email: <EmailObfuscator /></p>
           </div>
 
           <div className="space-y-4">
@@ -141,7 +101,7 @@ function PrivacyPolicy() {
             <h2 className="font-display text-2xl text-foreground mt-8">10. Contact Us</h2>
             <p>If you have any questions or concerns regarding this Privacy Policy, please contact us:</p>
             <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm">
-              <li><strong>Email:</strong> eternitychocolateooty@gmail.com</li>
+              <li><strong>Email:</strong> <EmailObfuscator /></li>
               <li><strong>Website:</strong> <a href="https://eternitychocolateooty.in" className="text-accent underline" target="_blank" rel="noreferrer noopener">https://eternitychocolateooty.in</a></li>
               <li><strong>Contact:</strong> 8489462100</li>
             </ul>

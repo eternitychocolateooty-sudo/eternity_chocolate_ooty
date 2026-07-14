@@ -226,22 +226,43 @@ function Checkout() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Client: handleSubmit started");
     if (isProcessing) {
-      console.log("Client: Already processing, skipping");
       return;
     }
 
     setIsProcessing(true);
 
-    try {
-      console.log("Client: Calling createCheckoutOrder server function", {
-        itemsCount: cart.items.length,
-        email,
-        name: `${firstName} ${lastName}`,
-        phone,
-      });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+    const pincodeRegex = /^\d{6}$/;
 
+    if (!firstName.trim() || !lastName.trim()) {
+      alert("Please provide both first name and last name.");
+      setIsProcessing(false);
+      return;
+    }
+    if (!emailRegex.test(email.trim())) {
+      alert("Please provide a valid email address.");
+      setIsProcessing(false);
+      return;
+    }
+    if (!phoneRegex.test(phone.trim())) {
+      alert("Please provide a valid phone number (10 to 15 digits).");
+      setIsProcessing(false);
+      return;
+    }
+    if (!address.trim() || !city.trim() || !stateField.trim()) {
+      alert("Please complete all shipping address fields.");
+      setIsProcessing(false);
+      return;
+    }
+    if (!pincodeRegex.test(pincode.trim())) {
+      alert("Please provide a valid 6-digit postal pincode.");
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
       // 1. Trigger order initialization in server function
       const orderRes = await createCheckoutOrder({
         data: {
@@ -267,8 +288,8 @@ function Checkout() {
         }
       });
 
-      console.log("Client: createCheckoutOrder resolved successfully", orderRes);
       const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock } = orderRes;
+
 
       // 2. Handle Mock Checkout / Offline Sandbox Mode
       if (isMock) {

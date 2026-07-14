@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Phone, Clock, Instagram, MessageCircle, Mail, Star } from "lucide-react";
 import storeImg from "@/assets/store.jpg";
+import { safeJsonStringify } from "@/lib/utils";
+import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 
 export const Route = createFileRoute("/visit")({
   head: () => ({
@@ -27,7 +29,7 @@ function Visit() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "Store",
             "name": "ETERNITY Handcrafted Chocolates",
@@ -70,13 +72,12 @@ function Visit() {
         }}
       />
       {/* HERO */}
-      <section className="relative h-[60vh] min-h-[420px] flex items-end overflow-hidden">
+      <section className="relative h-[40vh] md:h-[50vh] flex items-center justify-center overflow-hidden">
         <img
           src={storeImg}
-          alt="The ETERNITY boutique storefront in Ooty"
-          className="absolute inset-0 h-full w-full object-cover"
+          alt="ETERNITY boutique storefront"
+          className="absolute inset-0 h-full w-full object-cover scale-105 brightness-[0.4]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-[oklch(0.18_0.03_45/0.5)] to-transparent" />
         <div className="container mx-auto px-6 relative pb-12">
           <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Visit Us</p>
           <h1 className="font-display text-5xl md:text-7xl text-[oklch(0.96_0.018_80)] text-balance max-w-3xl">
@@ -104,11 +105,15 @@ function Visit() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.25em] text-accent mb-2">{label}</p>
-                {lines.map((l) => (
-                  <p key={l} className="text-foreground leading-relaxed">
-                    {l}
-                  </p>
-                ))}
+                {label === "Email" ? (
+                  <EmailObfuscator className="text-foreground leading-relaxed inline-block" />
+                ) : (
+                  lines.map((l) => (
+                    <p key={l} className="text-foreground leading-relaxed">
+                      {l}
+                    </p>
+                  ))
+                )}
               </div>
             </div>
           ))}

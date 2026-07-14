@@ -30,6 +30,17 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  // Authorize request (validate webhook origin)
+  const authHeader = req.headers.get("Authorization");
+  const expectedAuth = `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+  if (!authHeader || authHeader !== expectedAuth) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized access" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+
   try {
     const resendApiKey = Deno.env.get("RESEND_API_KEY")
     const ownerEmail = Deno.env.get("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com"
@@ -39,9 +50,9 @@ serve(async (req) => {
     }
 
     const payload: WebhookPayload = await req.json()
-    console.log("Supabase Webhook Payload received:", JSON.stringify(payload, null, 2))
-
     const { type, record, old_record } = payload
+    console.log("Supabase Webhook Payload received for table:", payload.table, "event:", type)
+
 
     // Determine if payment was completed in this trigger event
     const isPaymentCompleted = 
@@ -160,7 +171,7 @@ serve(async (req) => {
           </div>
         `,
       })
-      console.log(`Confirmation email sent successfully to customer: ${customerEmail}`)
+      console.log(`Confirmation email sent successfully to customer.`)
     }
 
     // 2. Dispatch notification email to store owner
@@ -208,7 +219,7 @@ serve(async (req) => {
           </div>
         `,
       })
-      console.log(`Alert email sent successfully to store owner: ${ownerEmail}`)
+      console.log(`Alert email sent successfully to store owner.`)
     }
 
     return new Response(

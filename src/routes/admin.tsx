@@ -212,13 +212,36 @@ function AdminConsole() {
 
   const handleFilesChange = (e: any) => {
     const files = Array.from(e.target.files || []) as File[];
-    const newItems = files.map((file) => ({
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    const validFiles: File[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File "${file.name}" has an invalid type. Only JPG, PNG, WEBP, and GIF images are allowed.`);
+        continue;
+      }
+      if (!allowedExtensions.includes(ext)) {
+        alert(`File "${file.name}" has an invalid extension.`);
+        continue;
+      }
+      if (file.size > maxSize) {
+        alert(`File "${file.name}" exceeds the 5MB size limit.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    const newItems = validFiles.map((file) => ({
       id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
       url: URL.createObjectURL(file),
       file,
     }));
     setImagesList((prev) => [...prev, ...newItems]);
   };
+
 
   const handleRemoveImage = (id: string) => {
     setImagesList((prev) => prev.filter((item) => item.id !== id));

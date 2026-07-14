@@ -1,9 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCart, parseVariant } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
-import { resolveProductImage } from "@/lib/utils";
+import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/products/$slug")({
@@ -79,7 +79,7 @@ function ProductDetails() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "Product",
             "name": product.name,

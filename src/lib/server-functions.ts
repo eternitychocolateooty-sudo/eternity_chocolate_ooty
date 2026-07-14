@@ -1,7 +1,51 @@
-// Forced redeployment to apply new Cloudflare environment variables
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 import { getPlatformEnv } from "./env.server";
+import { z } from "zod";
+
+// Zod schemas for input validation
+const customerInfoSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  name: z.string().min(1, "Name is required").max(100),
+  phone: z.string().min(10, "Phone number is too short").max(15, "Phone number is too long").regex(/^\+?[\d\s-]+$/, "Invalid phone format"),
+  userId: z.string().uuid("Invalid user ID format").optional(),
+});
+
+const shippingAddressSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
+  address: z.string().min(5, "Address must be at least 5 characters").max(250),
+  city: z.string().min(2, "City must be at least 2 characters").max(100),
+  state: z.string().min(2, "State must be at least 2 characters").max(100),
+  pincode: z.string().regex(/^\d{6}$/, "Pincode must be exactly 6 digits"),
+});
+
+const checkoutItemSchema = z.object({
+  productId: z.string().min(1, "Product ID is required"),
+  quantity: z.number().int().min(1, "Quantity must be at least 1").max(100, "Quantity exceeds limit"),
+  selectedVariant: z.string().max(100).optional(),
+});
+
+const createCheckoutOrderSchema = z.object({
+  items: z.array(checkoutItemSchema).min(1, "Cart cannot be empty"),
+  customerInfo: customerInfoSchema,
+  shippingAddress: shippingAddressSchema,
+});
+
+const verifyCheckoutPaymentSchema = z.object({
+  orderId: z.string().uuid("Invalid order ID format").optional(),
+  cashfreeOrderId: z.string().min(5).max(100).regex(/^CF-ORD-[\w-]+$/, "Invalid Cashfree Order ID format"),
+  cashfreePaymentId: z.string().min(5).max(100).regex(/^[\w-]+$/, "Invalid Cashfree Payment ID format").optional(),
+  isMock: z.boolean().optional(),
+});
+
+const submitFeedbackSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.string().email("Invalid email format"),
+  rating: z.number().int().min(1).max(5),
+  message: z.string().min(1, "Message is required").max(1000),
+});
+
 
 // Types
 export interface CheckoutItem {
@@ -142,7 +186,6 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     const ownerEmail = getPlatformEnv("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
 
     if (resendApiKey) {
-      console.log("Server: Dispatching confirmation emails via Resend HTTP API...");
       
       // Build order items summary table
       const itemsSummaryHtml = orderItems
@@ -233,7 +276,6 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
           })
         });
         const customerData = await customerRes.json();
-        console.log("Server: Resend customer receipt response:", customerRes.status, customerData);
       }
 
       // Wait 1.2 seconds to avoid Resend rate limit (429) on free/test accounts
@@ -292,7 +334,6 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
           })
         });
         const ownerData = await ownerRes.json();
-        console.log("Server: Resend owner alert response:", ownerRes.status, ownerData);
       }
     } else {
       console.warn("Server: RESEND_API_KEY is not defined in the environment. Skipping emails.");
@@ -307,21 +348,25 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
 // 1. ORDER INITIALIZATION
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .handler(async ({ data: payload, request }) => {
-    const { items, customerInfo, shippingAddress } = payload;
+    // Validate request body
+    const validation = createCheckoutOrderSchema.safeParse(payload);
+    if (!validation.success) {
+      throw new Error(`Validation error: ${validation.error.errors.map((e) => e.message).join(", ")}`);
+    }
+
+    const { items, customerInfo, shippingAddress } = validation.data;
 
     // Fetch actual prices from Supabase
     const productIds = items.map((i) => i.productId);
-    console.log("Server: Fetching products from Supabase", productIds);
     const { data: dbProducts, error: fetchErr } = await supabaseAdmin
       .from("products")
       .select("*")
       .in("id", productIds);
 
-    console.log("Server: Supabase products fetched", { count: dbProducts?.length, error: fetchErr });
-
     if (fetchErr || !dbProducts) {
       throw new Error(`Failed to retrieve product data: ${fetchErr?.message || "Unknown error"}`);
     }
+
 
     // Securely calculate checkout subtotal and total weight
     let subtotal = 0;
@@ -420,7 +465,6 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     }
 
     // Write pending order details to database
-    console.log("Server: Inserting pending order into Supabase...");
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -440,17 +484,16 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       .select()
       .single();
 
-    console.log("Server: Pending order insert result", { orderId: order?.id, error: orderErr });
-
     if (orderErr || !order) {
       const diag = {
-        hasServiceKey: !!getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
-        serviceKeyLength: getEnvVar("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
-        hasAnonKey: !!getEnvVar("VITE_SUPABASE_ANON_KEY"),
-        hasResendKey: !!getEnvVar("RESEND_API_KEY"),
+        hasServiceKey: !!getPlatformEnv("SUPABASE_SERVICE_ROLE_KEY"),
+        serviceKeyLength: getPlatformEnv("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
+        hasAnonKey: !!getPlatformEnv("VITE_SUPABASE_ANON_KEY"),
+        hasResendKey: !!getPlatformEnv("RESEND_API_KEY"),
       };
       throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"} (Diag: ${JSON.stringify(diag)})`);
     }
+
 
     // Write order items
     const orderItemsToInsert = items.map((item) => {
@@ -494,13 +537,20 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 // 2. PAYMENT STATUS VERIFICATION (Used for both live API checking and local simulation sandbox)
 export const verifyCheckoutPayment = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
-    const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = payload;
+    // Validate request body
+    const validation = verifyCheckoutPaymentSchema.safeParse(payload);
+    if (!validation.success) {
+      throw new Error(`Validation error: ${validation.error.errors.map((e) => e.message).join(", ")}`);
+    }
+
+    const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = validation.data;
 
     if (isMock) {
       if (!orderId) throw new Error("Mock verification requires local orderId reference.");
       await completeOrder(orderId, cashfreePaymentId || `pay_mock_${Math.random().toString(36).substring(2, 10)}`);
       return { success: true };
     }
+
 
     const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
     const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
@@ -559,7 +609,13 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
 // 3. SUBMIT FEEDBACK
 export const submitFeedback = createServerFn({ method: "POST" })
   .handler(async ({ data: payload }) => {
-    const { name, email, rating, message } = payload;
+    // Validate request body
+    const validation = submitFeedbackSchema.safeParse(payload);
+    if (!validation.success) {
+      throw new Error(`Validation error: ${validation.error.errors.map((e) => e.message).join(", ")}`);
+    }
+
+    const { name, email, rating, message } = validation.data;
 
     // Record feedback in database
     const { data: fb, error: insertErr } = await supabaseAdmin
@@ -571,6 +627,7 @@ export const submitFeedback = createServerFn({ method: "POST" })
     if (insertErr || !fb) {
       throw new Error(`Failed to save feedback: ${insertErr?.message || "Unknown error"}`);
     }
+
 
     // Feedback recorded, email notifications removed.
     return { success: true };

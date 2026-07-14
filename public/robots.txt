@@ -3,14 +3,10 @@
 
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /account
 
 # Explicitly ensure AI scrapers can parse our handcrafted chocolates for GEO
 User-agent: GPTBot
 Allow: /
-Disallow: /admin
-Disallow: /account
 
 User-agent: ChatGPT-User
 Allow: /

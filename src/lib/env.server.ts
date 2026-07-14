@@ -4,13 +4,8 @@ export function getPlatformEnv(name: string): string | undefined {
   
   const processVal = typeof process !== "undefined" && process.env ? process.env[name] : undefined;
 
-  console.log(`getPlatformEnv(${name}):`, { 
-    hasCloudflareEnv: isCloudflareEnvDefined, 
-    hasCfVal: !!cfVal, 
-    hasProcessVal: !!processVal 
-  });
-
   if (cfVal) return cfVal;
   if (processVal) return processVal;
   return undefined;
 }
+

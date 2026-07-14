@@ -23,7 +23,7 @@ import g1 from "@/assets/g1.jpg";
 import g3 from "@/assets/g3.jpg";
 import g5 from "@/assets/g5.jpg";
 import { useCart } from "@/components/CartContext";
-import { resolveProductImage } from "@/lib/utils";
+import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -55,7 +55,7 @@ function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "Store",
             "name": "ETERNITY Handcrafted Chocolates",
@@ -97,6 +97,7 @@ function Home() {
           })
         }}
       />
+
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">

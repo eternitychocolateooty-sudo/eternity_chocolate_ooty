@@ -29,3 +29,13 @@ export function resolveProductImage(imagePath: string): string {
   const filename = imagePath.split("/").pop() || "";
   return localImages[filename] || imagePath;
 }
+
+export function safeJsonStringify(val: any): string {
+  return JSON.stringify(val)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\//g, "\\u002f")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
