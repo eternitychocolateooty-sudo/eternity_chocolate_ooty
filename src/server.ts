@@ -170,7 +170,7 @@ export default {
       // Prevent sniffing MIME types
       newHeaders.set("X-Content-Type-Options", "nosniff");
       // HSTS
-      newHeaders.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+      newHeaders.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
       // Referrer policy
       newHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
       // Clickjacking protection

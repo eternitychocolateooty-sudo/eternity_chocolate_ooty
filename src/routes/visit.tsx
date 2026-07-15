@@ -97,7 +97,7 @@ function Visit() {
             },
             { Icon: Clock, label: "Hours", lines: ["Open", "9:00 am – 10:30 pm"] },
             { Icon: Phone, label: "Call us", lines: ["084894 62100"] },
-            { Icon: Mail, label: "Email", lines: ["eternitychocolateooty@gmail.com"] },
+            { Icon: Mail, label: "Email", lines: [] },
           ].map(({ Icon, label, lines }) => (
             <div key={label} className="rounded-3xl glass p-6 shadow-soft flex gap-5">
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-gold shrink-0 shadow-gold">
