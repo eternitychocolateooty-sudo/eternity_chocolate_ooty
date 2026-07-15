@@ -22,33 +22,6 @@ export const Route = createFileRoute("/story")({
   component: Story,
 });
 
-const timeline = [
-  {
-    year: "The Beginning",
-    title: "",
-    text: "A small idea inspired by the beauty and culture of Ooty.",
-  },
-  {
-    year: "Growing",
-    title: "With Visitors",
-    text: "As more travelers discovered the store, Eternity became a familiar stop in their journey through the Nilgiris.",
-  },
-  {
-    year: "Trust",
-    title: "Building Trust",
-    text: "Through quality, consistency, and genuine service, the store earned the confidence of locals and tourists alike.",
-  },
-  {
-    year: "Destination",
-    title: "Becoming a Destination",
-    text: "What started as a shop evolved into a place people recommend, revisit, and remember.",
-  },
-  {
-    year: "Today",
-    title: "Still rooted",
-    text: "Still rooted in the same values—authenticity, quality, and a deep love for the hills we call home.",
-  },
-];
 
 function Story() {
   return (
@@ -71,34 +44,27 @@ function Story() {
         </div>
       </section>
 
-      {/* TIMELINE */}
+      {/* OUR STORY */}
       <section className="py-24 bg-gradient-cream">
         <div className="container mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">The Journey</p>
-          </div>
-          <div className="relative max-w-3xl mx-auto">
-            <div className="absolute left-3 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-accent to-transparent md:-translate-x-1/2" />
-            <ol className="space-y-12">
-              {timeline.map((t, i) => (
-                <li
-                  key={t.year}
-                  className={`relative md:grid md:grid-cols-2 md:gap-10 items-center ${i % 2 ? "md:[&>*:first-child]:order-2" : ""}`}
-                >
-                  <div
-                    className={`pl-12 md:pl-0 ${i % 2 ? "md:text-left md:pl-10" : "md:text-right md:pr-10"}`}
-                  >
-                    <p className="font-display text-4xl gold-text">{t.year}</p>
-                    {t.title && <h3 className="font-display text-2xl mt-2">{t.title}</h3>}
-                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{t.text}</p>
-                  </div>
-                  <div className="hidden md:block" />
-                  <span className="absolute left-3 md:left-1/2 top-2 -translate-x-1/2 grid h-3 w-3 place-items-center">
-                    <span className="h-3 w-3 rounded-full bg-gradient-gold shadow-gold" />
-                  </span>
-                </li>
-              ))}
-            </ol>
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Our Story</p>
+            <h2 className="font-display text-4xl md:text-5xl mb-10 text-foreground">The Journey</h2>
+            <div className="space-y-6 text-base md:text-lg text-muted-foreground leading-relaxed">
+              <p>
+                Every chocolate has a story, and ours begins with a simple dream—to create moments of happiness. 
+                We carefully select the finest cocoa and premium ingredients, blending tradition with creativity 
+                to craft chocolates that delight every bite.
+              </p>
+              <p>
+                From rich dark chocolate to creamy milk chocolate and handcrafted treats, each piece is made with 
+                love, passion, and attention to detail. Whether you're celebrating a special occasion, gifting 
+                someone you love, or simply treating yourself, our chocolates are made to make every moment memorable.
+              </p>
+              <p className="font-display text-xl md:text-2xl text-accent font-medium mt-10">
+                Because life is sweeter when shared—one chocolate at a time. 🍫✨
+              </p>
+            </div>
           </div>
         </div>
       </section>
