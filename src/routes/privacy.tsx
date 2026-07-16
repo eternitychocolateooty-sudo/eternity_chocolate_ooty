@@ -60,8 +60,15 @@ function PrivacyPolicy() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-display text-2xl text-foreground mt-8">4. Cookies and Web Beacons</h2>
-            <p>Like any other website, ETERNITY uses cookies. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.</p>
+            <h2 className="font-display text-2xl text-foreground mt-8">4. Cookies Policy</h2>
+            <p>We believe in transparency and user privacy. ETERNITY uses only essential, secure, and SameSite-protected cookies to operate our website and enable core functionalities. These essential cookies are used for:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>User authentication and session management</li>
+              <li>CSRF security protection</li>
+              <li>Checkout and payment processing flows</li>
+              <li>Basic user preferences (such as remembering if the navigation sidebar is collapsed or expanded)</li>
+            </ul>
+            <p>We do not use any analytics, advertising, tracking, or marketing cookies. You can manage or disable cookies through your browser settings, though doing so may prevent certain parts of our website from functioning properly.</p>
           </div>
 
           <div className="space-y-4">

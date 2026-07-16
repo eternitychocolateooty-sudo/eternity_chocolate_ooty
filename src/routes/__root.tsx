@@ -10,6 +10,7 @@ import {
 import { SiteLayout } from "@/components/SiteLayout";
 import { AuthProvider } from "@/components/AuthContext";
 import { CartProvider } from "@/components/CartContext";
+import { CookieNotice } from "@/components/CookieNotice";
 
 import appCss from "../styles.css?url";
 import logoImg from "@/assets/logo.png";
@@ -129,6 +130,7 @@ function RootComponent() {
       <AuthProvider>
         <CartProvider>
           <SiteLayout />
+          <CookieNotice />
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
