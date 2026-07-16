@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -11,6 +12,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { AuthProvider } from "@/components/AuthContext";
 import { CartProvider } from "@/components/CartContext";
 import { CookieNotice } from "@/components/CookieNotice";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 import appCss from "../styles.css?url";
 import logoImg from "@/assets/logo.png";
@@ -125,11 +127,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          <SiteLayout />
+          {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
+          <div
+            className={`transition-all duration-1000 transform ${
+              isLoading
+                ? "opacity-0 translate-y-6 pointer-events-none blur-sm"
+                : "opacity-100 translate-y-0 blur-none"
+            }`}
+            style={{ transitionTimingFunction: "var(--transition-smooth)" }}
+          >
+            <SiteLayout />
+          </div>
           <CookieNotice />
         </CartProvider>
       </AuthProvider>

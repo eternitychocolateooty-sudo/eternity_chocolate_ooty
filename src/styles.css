@@ -272,3 +272,191 @@
 footer .theme-logo {
   filter: brightness(0) invert(1) opacity(0.9);
 }
+
+/* ==========================================================================
+   Premium Immersive Loading Screen Styles
+   ========================================================================== */
+
+@keyframes flowChocolate {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(8px, -12px) scale(1.03) rotate(1deg);
+  }
+  66% {
+    transform: translate(-8px, 8px) scale(0.97) rotate(-1deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+.chocolate-flow-overlay {
+  background: radial-gradient(circle at 50% 50%, #3B241A 0%, #2A1812 55%, #150b08 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.chocolate-flow-overlay::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 35% 35%, rgba(90, 50, 35, 0.25) 0%, transparent 55%),
+              radial-gradient(circle at 65% 65%, rgba(59, 36, 26, 0.3) 0%, transparent 60%);
+  filter: blur(50px);
+  animation: flowChocolate 25s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.chocolate-texture {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 50% 50%, rgba(201, 167, 106, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Emblem draw & shimmer animations */
+@keyframes emblemForm {
+  0% {
+    stroke-dashoffset: 700;
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.3;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.animate-emblem-stroke {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  animation: emblemForm 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes goldShimmerSweep {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(150%) skewX(-25deg);
+  }
+}
+
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(201, 167, 106, 0.35) 50%,
+    rgba(255, 255, 255, 0.03) 70%,
+    transparent 1000%
+  );
+  transform: translateX(-150%) skewX(-25deg);
+  animation: goldShimmerSweep 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: 1.5s;
+}
+
+/* Glow behind emblem */
+@keyframes softGlow {
+  0%, 100% {
+    opacity: 0.12;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(1.08);
+  }
+}
+.emblem-glow {
+  background: radial-gradient(circle at center, rgba(201, 167, 106, 0.15) 0%, transparent 65%);
+  filter: blur(25px);
+  animation: softGlow 5s ease-in-out infinite;
+}
+
+/* Rising particles */
+@keyframes floatParticleUp {
+  0% {
+    transform: translateY(30px) translateX(0) scale(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--p-op);
+  }
+  85% {
+    opacity: var(--p-op);
+  }
+  100% {
+    transform: translateY(-90px) translateX(var(--p-drift)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.cocoa-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold) 0%, #3B241A 100%);
+  animation: floatParticleUp var(--p-dur) ease-out infinite;
+  animation-delay: var(--p-delay);
+  opacity: 0;
+}
+
+/* Exit particle burst */
+@keyframes burstOut {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--b-x), var(--b-y)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.burst-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: burstOut 0.8s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+/* Accessibility: prefers-reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  .chocolate-flow-overlay::before,
+  .animate-emblem-stroke,
+  .shimmer-sweep::after,
+  .emblem-glow,
+  .cocoa-particle,
+  .burst-particle {
+    animation: none !important;
+    transition: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  .chocolate-flow-overlay::before {
+    opacity: 0.3 !important;
+  }
+}
+
