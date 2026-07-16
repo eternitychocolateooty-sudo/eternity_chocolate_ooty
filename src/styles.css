@@ -294,7 +294,6 @@ footer .theme-logo {
 
 .chocolate-flow-overlay {
   background: radial-gradient(circle at 50% 50%, #3B241A 0%, #2A1812 55%, #150b08 100%);
-  position: relative;
   overflow: hidden;
 }
 

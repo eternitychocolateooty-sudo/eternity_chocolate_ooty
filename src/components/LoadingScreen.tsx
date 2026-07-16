@@ -137,7 +137,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center chocolate-flow-overlay text-white select-none transition-all duration-1000 ease-in-out ${containerClass}`}
+      className={`fixed inset-0 top-0 left-0 w-screen h-screen z-[100] flex flex-col items-center justify-center chocolate-flow-overlay text-white select-none transition-all duration-1000 ease-in-out ${containerClass}`}
     >
       {/* Flowing background texture */}
       <div className="chocolate-texture" />
