@@ -33,13 +33,17 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Discover small-batch artisan chocolates handmade in the misty hills of Ooty. Family-owned boutique. Visit us in store.",
+          "Discover small-batch artisan chocolates handmade in the misty hills of Ooty. Family-owned boutique offering pure cocoa dark & milk chocolates.",
       },
       { property: "og:title", content: "ETERNITY — Handcrafted Chocolates From Ooty" },
       {
         property: "og:description",
-        content: "Made with passion, richness, and authentic homemade flavors.",
+        content: "Made with passion, richness, and authentic homemade flavors in the Nilgiris.",
       },
+      { property: "og:url", content: "https://eternitychocolateooty.com/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.com/" },
     ],
   }),
   component: Home,

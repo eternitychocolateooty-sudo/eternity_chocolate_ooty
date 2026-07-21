@@ -4,19 +4,29 @@ import storeImg from "@/assets/store.jpg";
 import ootyImg from "@/assets/ooty.jpg";
 import g2 from "@/assets/g2.jpg";
 
+import { safeJsonStringify } from "@/lib/utils";
+
 export const Route = createFileRoute("/story")({
   head: () => ({
     meta: [
-      { title: "Our Story — ETERNITY Chocolate Shop in Ooty" },
+      { title: "Our Story — ETERNITY Handcrafted Chocolates Ooty" },
       {
         name: "description",
-        content: "A small family kitchen, a slow Ooty fog, and a quiet belief in the best chocolate.",
+        content:
+          "Learn about Eternity Chocolates in Ooty — a family-owned artisan chocolate boutique slow-crafting small-batch homemade chocolates in the Nilgiri hills.",
       },
-      { property: "og:title", content: "Our Story — ETERNITY" },
+      { property: "og:title", content: "Our Story — ETERNITY Handcrafted Chocolates Ooty" },
       {
         property: "og:description",
-        content: "A timeless destination that reflects the spirit, beauty, and culture of the Nilgiris.",
+        content: "A small family kitchen in the misty Ooty hills, slow-crafting unforgettable artisan chocolates for three decades.",
       },
+      { property: "og:url", content: "https://eternitychocolateooty.com/story" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Our Story — ETERNITY Handcrafted Chocolates Ooty" },
+      { name: "twitter:description", content: "Family-owned artisan chocolate boutique slow-crafting chocolates in Ooty." },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.com/story" },
     ],
   }),
   component: Story,
@@ -26,6 +36,23 @@ export const Route = createFileRoute("/story")({
 function Story() {
   return (
     <div className="pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonStringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            "name": "Our Story — ETERNITY Handcrafted Chocolates Ooty",
+            "description": "Family-owned artisan chocolate boutique slow-crafting small-batch homemade chocolates in Ooty.",
+            "mainEntity": {
+              "@type": "Organization",
+              "name": "ETERNITY Handcrafted Chocolates",
+              "url": "https://eternitychocolateooty.com",
+              "logo": "https://eternitychocolateooty.com/assets/logo.png"
+            }
+          })
+        }}
+      />
       {/* HERO */}
       <section className="relative py-24 md:py-36 overflow-hidden">
         <div className="absolute inset-0">

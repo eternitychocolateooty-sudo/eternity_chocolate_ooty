@@ -7,17 +7,24 @@ import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 export const Route = createFileRoute("/visit")({
   head: () => ({
     meta: [
-      { title: "Visit Us — ETERNITY Ooty Boutique" },
+      { title: "Visit Us — ETERNITY Ooty Chocolate Boutique & Store" },
       {
         name: "description",
         content:
-          "Find us at Bharathiyar Complex, Ooty. Open 9 am Closes 10:30 pm. Call, WhatsApp, or write a Google Maps review.",
+          "Visit Eternity Chocolate Boutique at Bharathiyar Complex, Ooty. Open 9:00 AM to 10:30 PM daily. Call 084894 62100 or stop by for fresh homemade chocolates.",
       },
-      { property: "og:title", content: "Visit ETERNITY — Ooty" },
+      { property: "og:title", content: "Visit ETERNITY Chocolate Store — Ooty" },
       {
         property: "og:description",
-        content: "Our boutique on Bharathiyar Complex, Ooty. Stop by for a hot chocolate.",
+        content: "Our boutique at Bharathiyar Complex, Ooty. Stop by for fresh handcrafted chocolates and hot cocoa.",
       },
+      { property: "og:url", content: "https://eternitychocolateooty.com/visit" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Visit ETERNITY Chocolate Store — Ooty" },
+      { name: "twitter:description", content: "Boutique at Bharathiyar Complex, Ooty. Open daily 9 AM - 10:30 PM." },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.com/visit" },
     ],
   }),
   component: Visit,

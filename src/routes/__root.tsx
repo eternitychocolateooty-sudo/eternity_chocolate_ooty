@@ -83,16 +83,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Family-owned artisan chocolate boutique in the misty hills of Ooty. Small-batch, handcrafted, unforgettable.",
+          "Family-owned artisan chocolate boutique in the misty hills of Ooty. Small-batch, handcrafted, unforgettable homemade chocolates.",
       },
-      { name: "author", content: "ETERNITY" },
+      { name: "author", content: "ETERNITY Ooty" },
+      { name: "keywords", content: "Ooty chocolate, handcrafted chocolate Ooty, homemade chocolates Ooty, artisan dark chocolate, Ooty sweets, Eternity chocolate" },
       { property: "og:title", content: "ETERNITY — Handcrafted Chocolates From Ooty" },
       {
         property: "og:description",
         content: "Family-owned artisan chocolate boutique in the misty hills of Ooty.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "ETERNITY Chocolates Ooty" },
+      { property: "og:locale", content: "en_IN" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "ETERNITY — Handcrafted Chocolates From Ooty" },
+      { name: "twitter:description", content: "Family-owned artisan chocolate boutique in the misty hills of Ooty." },
     ],
     links: [
       { rel: "icon", href: logoImg },

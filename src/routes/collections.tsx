@@ -3,22 +3,29 @@ import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal } from "lucid
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/CartContext";
 import { categories, formatMoney } from "@/data/shop";
-import { resolveProductImage } from "@/lib/utils";
+import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 
 export const Route = createFileRoute("/collections")({
   head: () => ({
     meta: [
-      { title: "Shop Collection - ETERNITY Ooty" },
+      { title: "Shop Handcrafted Chocolates & Sweets — ETERNITY Ooty" },
       {
         name: "description",
         content:
-          "Shop premium handmade chocolates, spices, tea, and coffee from ETERNITY, Ooty.",
+          "Browse our complete collection of artisan dark chocolates, milk chocolates, nut fudges, gourmet tea & spices from Ooty.",
       },
-      { property: "og:title", content: "Shop ETERNITY Collection" },
+      { property: "og:title", content: "Shop Handcrafted Chocolates — ETERNITY Ooty" },
       {
         property: "og:description",
-        content: "Premium artisan chocolates, aromatic spices, tea, and coffee from the hills of Ooty.",
+        content: "Premium artisan chocolates, aromatic spices, tea, and coffee from the misty hills of Ooty.",
       },
+      { property: "og:url", content: "https://eternitychocolateooty.com/collections" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Shop Handcrafted Chocolates — ETERNITY Ooty" },
+      { name: "twitter:description", content: "Artisan dark chocolates, milk chocolates, nut fudges & spices from Ooty." },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.com/collections" },
     ],
   }),
   component: Collections,
@@ -57,6 +64,23 @@ function Collections() {
 
   return (
     <div className="pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonStringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "ETERNITY Ooty Handcrafted Chocolate Collection",
+            "numberOfItems": filtered.length,
+            "itemListElement": filtered.map((item, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "name": item.name,
+              "url": `https://eternitychocolateooty.com/products/${item.slug}`
+            }))
+          })
+        }}
+      />
       <section className="container mx-auto px-6 py-16 md:py-24">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Online Shop</p>

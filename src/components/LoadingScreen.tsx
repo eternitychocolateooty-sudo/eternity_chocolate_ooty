@@ -30,10 +30,10 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   const progressRef = useRef(0);
   const animationRef = useRef<number | null>(null);
 
-  // 1. Progress Bar Animation (Smooth 2.5s duration)
+  // 1. Progress Bar Animation (Fast 350ms for performance & instant feel)
   useEffect(() => {
     const startTime = performance.now();
-    const duration = 2400; // 2.4 seconds loading time
+    const duration = 350; // Fast loading time
 
     const updateProgress = (now: number) => {
       const elapsed = now - startTime;
@@ -72,28 +72,25 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
           return next;
         });
         setTextFade(false); // Trigger fade-in
-      }, 350);
+      }, 150);
     }, 2000);
 
     return () => clearInterval(interval);
   }, [exitState]);
 
-  // 3. Exit Sequence Timings
+  // 3. Exit Sequence Timings (Optimized micro-transition)
   const startExitSequence = () => {
-    // Stage 1: Golden shimmer sweep triggers across the logo
     setExitState("shimmer");
 
-    // Stage 2: Logo dissolves into particles, background fades away
     setTimeout(() => {
       setExitState("dissolving");
       generateBurstParticles();
 
-      // Stage 3: Fully completed, unmount loader
       setTimeout(() => {
         setExitState("done");
         onComplete();
-      }, 900); // Dissolve animation duration
-    }, 600); // Shimmer duration
+      }, 200);
+    }, 150);
   };
 
   // 4. Generate burst particles for the logo dissolve effect

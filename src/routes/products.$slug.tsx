@@ -27,20 +27,31 @@ export const Route = createFileRoute("/products/$slug")({
 
     return { product: normalizedProduct };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData?.product.name ?? "Chocolate"} - ETERNITY` },
-      {
-        name: "description",
-        content: loaderData?.product.description ?? "Premium handmade chocolate from Ooty.",
-      },
-      {
-        property: "og:title",
-        content: `${loaderData?.product.name ?? "Chocolate"} - ETERNITY`,
-      },
-      { property: "og:description", content: loaderData?.product.description ?? "" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const prodName = loaderData?.product.name ?? "Handcrafted Chocolate";
+    const prodDesc = loaderData?.product.description ?? "Premium handmade chocolate from Ooty.";
+    const prodImg = resolveProductImage(loaderData?.product.images?.[0]);
+    const prodUrl = `https://eternitychocolateooty.com/products/${loaderData?.product.slug ?? ""}`;
+
+    return {
+      meta: [
+        { title: `${prodName} — ETERNITY Ooty Chocolates` },
+        { name: "description", content: prodDesc },
+        { property: "og:title", content: `${prodName} — ETERNITY` },
+        { property: "og:description", content: prodDesc },
+        { property: "og:image", content: prodImg },
+        { property: "og:url", content: prodUrl },
+        { property: "og:type", content: "product" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${prodName} — ETERNITY` },
+        { name: "twitter:description", content: prodDesc },
+        { name: "twitter:image", content: prodImg },
+      ],
+      links: [
+        { rel: "canonical", href: prodUrl },
+      ],
+    };
+  },
   component: ProductDetails,
 });
 
@@ -120,12 +131,15 @@ function ProductDetails() {
             <div className="overflow-hidden rounded-3xl bg-card shadow-luxe">
               <img
                 src={resolveProductImage(activeImage)}
-                alt={product.name}
+                alt={`${product.name} - Eternity Ooty Handcrafted Chocolate`}
                 className="aspect-square w-full object-cover"
+                fetchPriority="high"
+                width={800}
+                height={800}
               />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3">
-              {product.images.map((image) => (
+              {product.images.map((image, idx) => (
                 <button
                   key={image}
                   onClick={() => setActiveImage(image)}
@@ -133,7 +147,14 @@ function ProductDetails() {
                     activeImage === image ? "border-accent" : "border-transparent"
                   }`}
                 >
-                  <img src={resolveProductImage(image)} alt="" className="aspect-square w-full object-cover" />
+                  <img
+                    src={resolveProductImage(image)}
+                    alt={`${product.name} thumbnail ${idx + 1}`}
+                    className="aspect-square w-full object-cover"
+                    loading="lazy"
+                    width={200}
+                    height={200}
+                  />
                 </button>
               ))}
             </div>
