@@ -132,18 +132,24 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [isLoading, setIsLoading] = useState(true);
+  const [showLoader, setShowLoader] = useState(true);
+  const [revealContent, setRevealContent] = useState(true);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
+          {showLoader && (
+            <LoadingScreen
+              onReveal={() => setRevealContent(true)}
+              onComplete={() => setShowLoader(false)}
+            />
+          )}
           <div
-            className={`transition-all duration-1000 transform ${
-              isLoading
-                ? "opacity-0 translate-y-6 pointer-events-none blur-sm"
-                : "opacity-100 translate-y-0 blur-none"
+            className={`transition-all duration-700 transform ${
+              revealContent
+                ? "opacity-100 translate-y-0 blur-none"
+                : "opacity-0 translate-y-2 pointer-events-none blur-sm"
             }`}
             style={{ transitionTimingFunction: "var(--transition-smooth)" }}
           >
