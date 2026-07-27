@@ -11,17 +11,21 @@ export const Route = createFileRoute("/visit")({
       {
         name: "description",
         content:
-          "Visit Eternity Chocolate Boutique at Bharathiyar Complex, Ooty. Open 9:00 AM to 10:30 PM daily. Call 084894 62100 or stop by for fresh homemade chocolates.",
+          "Visit Eternity Chocolate Boutique at Bharathiyar Complex, Charring Cross, Ooty. Open 9:00 AM to 10:30 PM daily. Call +91 84894 62100 or stop by for fresh homemade chocolates.",
       },
       { property: "og:title", content: "Visit ETERNITY Chocolate Store — Ooty" },
       {
         property: "og:description",
-        content: "Our boutique at Bharathiyar Complex, Ooty. Stop by for fresh handcrafted chocolates and hot cocoa.",
+        content: "Our boutique at Bharathiyar Complex, Charring Cross, Ooty. Stop by for fresh handcrafted chocolates and hot cocoa.",
       },
       { property: "og:url", content: "https://eternitychocolateooty.in/visit" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Visit ETERNITY Chocolate Store — Ooty" },
       { name: "twitter:description", content: "Boutique at Bharathiyar Complex, Ooty. Open daily 9 AM - 10:30 PM." },
+      { name: "geo.position", content: "11.4116;76.7088" },
+      { name: "geo.placename", content: "Charring Cross, Ooty, Tamil Nadu, India" },
+      { name: "geo.region", content: "IN-TN" },
+      { name: "ICBM", content: "11.4116, 76.7088" },
     ],
     links: [
       { rel: "canonical", href: "https://eternitychocolateooty.in/visit" },
@@ -134,7 +138,15 @@ function Visit() {
             </div>
           ))}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-wrap gap-3 pt-2">
+            <a
+              href="https://www.google.com/maps/dir/?api=1&destination=Eternity+Chocolate+Charring+Cross+Ooty&destination_place_id=ChIJJzRBdz29qDsRVx0H2lI_qIo"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-3 font-medium shadow-soft hover:-translate-y-0.5 transition-all"
+            >
+              <MapPin className="h-4 w-4" /> Get Directions
+            </a>
             <a
               href="https://wa.me/918489462100"
               target="_blank"
@@ -142,6 +154,12 @@ function Visit() {
               className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-6 py-3 text-[oklch(0.22_0.035_50)] font-medium shadow-gold hover:-translate-y-0.5 transition-all"
             >
               <MessageCircle className="h-4 w-4" /> WhatsApp
+            </a>
+            <a
+              href="tel:+918489462100"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 text-sm font-medium hover:border-accent hover:text-accent transition-colors"
+            >
+              <Phone className="h-4 w-4" /> Call Store
             </a>
             <a
               href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="

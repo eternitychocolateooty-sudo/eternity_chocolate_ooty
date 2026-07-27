@@ -368,16 +368,26 @@ function Footer() {
           </ul>
         </div>
         <div>
-          <h4 className="font-display text-lg mb-4">Visit</h4>
-          <ul className="space-y-3 text-sm text-[oklch(0.94_0.02_80/0.7)]">
-            <li className="flex gap-2">
-              <MapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" /> no 7,8, bharathiyar complex, charring. cross, Ooty, Tamil Nadu 643001
-            </li>
-            <li className="flex gap-2">
-              <Phone className="h-4 w-4 text-accent shrink-0 mt-0.5" /> 084894 62100
-            </li>
-            <li className="text-xs">Open · 9 am Closes 10:30 pm</li>
-          </ul>
+          <h4 className="font-display text-lg mb-4">Visit Store</h4>
+          <address className="not-italic space-y-3 text-sm text-[oklch(0.94_0.02_80/0.7)]">
+            <a
+              href="https://www.google.com/maps/place/Eternity/@11.4117425,76.7079431,17z"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="flex gap-2 hover:text-accent transition-colors"
+            >
+              <MapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+              <span>No 7,8, Bharathiyar Complex, Charring Cross, Ooty, Tamil Nadu 643001</span>
+            </a>
+            <a
+              href="tel:+918489462100"
+              className="flex gap-2 hover:text-accent transition-colors"
+            >
+              <Phone className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+              <span>+91 84894 62100</span>
+            </a>
+            <p className="text-xs text-[oklch(0.94_0.02_80/0.5)]">Open Daily · 9:00 AM – 10:30 PM</p>
+          </address>
         </div>
       </div>
       <div className="border-t border-[oklch(0.94_0.02_80/0.12)] py-6">
