@@ -19,9 +19,11 @@ export const Route = createFileRoute("/visit")({
         content: "Our boutique at Bharathiyar Complex, Charring Cross, Ooty. Stop by for fresh handcrafted chocolates and hot cocoa.",
       },
       { property: "og:url", content: "https://eternitychocolateooty.in/visit" },
+      { property: "og:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Visit ETERNITY Chocolate Store — Ooty" },
       { name: "twitter:description", content: "Boutique at Bharathiyar Complex, Ooty. Open daily 9 AM - 10:30 PM." },
+      { name: "twitter:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
       { name: "geo.position", content: "11.4116;76.7088" },
       { name: "geo.placename", content: "Charring Cross, Ooty, Tamil Nadu, India" },
       { name: "geo.region", content: "IN-TN" },
@@ -42,51 +44,72 @@ function Visit() {
         dangerouslySetInnerHTML={{
           __html: safeJsonStringify({
             "@context": "https://schema.org",
-            "@type": "Store",
-            "@id": "https://eternitychocolateooty.in/#store",
-            "name": "Eternity Chocolate Ooty",
-            "image": "https://eternitychocolateooty.in/assets/logo.png",
-            "url": "https://eternitychocolateooty.in/visit",
-            "telephone": "+91-8489462100",
-            "priceRange": "₹₹",
-            "currenciesAccepted": "INR",
-            "paymentAccepted": "Cash, Credit Card, UPI, Debit Card",
-            "address": {
-              "@type": "PostalAddress",
-              "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
-              "addressLocality": "Ooty",
-              "addressRegion": "Tamil Nadu",
-              "postalCode": "643001",
-              "addressCountry": "IN"
-            },
-            "geo": {
-              "@type": "GeoCoordinates",
-              "latitude": 11.4116,
-              "longitude": 76.7088
-            },
-            "hasMap": "https://maps.google.com/?q=Charring+Cross+Ooty+Eternity+Chocolate",
-            "areaServed": [
-              "Ooty",
-              "Nilgiris",
-              "Tamil Nadu",
-              "India"
-            ],
-            "openingHoursSpecification": {
-              "@type": "OpeningHoursSpecification",
-              "dayOfWeek": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
-              ],
-              "opens": "09:00",
-              "closes": "22:30"
-            },
-            "sameAs": [
-              "https://www.instagram.com/eternitychocolateooty/"
+            "@graph": [
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://eternitychocolateooty.in"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Visit Us",
+                    "item": "https://eternitychocolateooty.in/visit"
+                  }
+                ]
+              },
+              {
+                "@type": "Store",
+                "@id": "https://eternitychocolateooty.in/#store",
+                "name": "Eternity Chocolate Ooty",
+                "image": "https://eternitychocolateooty.in/assets/logo.png",
+                "url": "https://eternitychocolateooty.in/visit",
+                "telephone": "+91-8489462100",
+                "priceRange": "₹₹",
+                "currenciesAccepted": "INR",
+                "paymentAccepted": "Cash, Credit Card, UPI, Debit Card",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
+                  "addressLocality": "Ooty",
+                  "addressRegion": "Tamil Nadu",
+                  "postalCode": "643001",
+                  "addressCountry": "IN"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 11.4116,
+                  "longitude": 76.7088
+                },
+                "hasMap": "https://maps.google.com/?q=Charring+Cross+Ooty+Eternity+Chocolate",
+                "areaServed": [
+                  "Ooty",
+                  "Nilgiris",
+                  "Tamil Nadu",
+                  "India"
+                ],
+                "openingHoursSpecification": {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday"
+                  ],
+                  "opens": "09:00",
+                  "closes": "22:30"
+                },
+                "sameAs": [
+                  "https://www.instagram.com/eternitychocolateooty/"
+                ]
+              }
             ]
           })
         }}

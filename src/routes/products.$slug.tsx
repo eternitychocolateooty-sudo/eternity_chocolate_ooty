@@ -92,8 +92,33 @@ function ProductDetails() {
         dangerouslySetInnerHTML={{
           __html: safeJsonStringify({
             "@context": "https://schema.org",
-            "@type": "Product",
-            "name": `${product.name} — Handcrafted Ooty Chocolate`,
+            "@graph": [
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://eternitychocolateooty.in"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Collections",
+                    "item": "https://eternitychocolateooty.in/collections"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": product.name,
+                    "item": `https://eternitychocolateooty.in/products/${product.slug}`
+                  }
+                ]
+              },
+              {
+                "@type": "Product",
+                "name": `${product.name} — Handcrafted Ooty Chocolate`,
             "image": product.images?.map((img: string) => resolveProductImage(img)),
             "description": product.description,
             "sku": product.id || `ECO-${product.slug}`,
@@ -189,9 +214,11 @@ function ProductDetails() {
                 }
               }
             ]
-          })
-        }}
-      />
+          }
+        ]
+      })
+    }}
+  />
       <section className="container mx-auto px-6 py-10">
         <Link
           to="/collections"

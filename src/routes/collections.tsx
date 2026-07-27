@@ -20,9 +20,11 @@ export const Route = createFileRoute("/collections")({
         content: "Premium artisan chocolates, aromatic spices, tea, and coffee from the misty hills of Ooty.",
       },
       { property: "og:url", content: "https://eternitychocolateooty.in/collections" },
+      { property: "og:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Shop Handcrafted Chocolates — ETERNITY Ooty" },
       { name: "twitter:description", content: "Artisan dark chocolates, milk chocolates, nut fudges & spices from Ooty." },
+      { name: "twitter:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
     ],
     links: [
       { rel: "canonical", href: "https://eternitychocolateooty.in/collections" },
@@ -44,23 +46,25 @@ function Collections() {
   const [active, setActive] = useState<(typeof categories)[number]>("All");
   const [query, setQuery] = useState("");
   const [price, setPrice] = useState(6000);
-  const [sort, setSort] = useState<SortKey>("popular");
+  const [sortKey, setSortKey] = useState<SortKey>("popular");
 
   const filtered = useMemo(() => {
     return products
-      .filter((product) => active === "All" || product.category === active)
-      .filter((product) => getProductPrice(product) <= price)
-      .filter((product) => {
-        const target = `${product.name} ${product.description} ${product.category}`.toLowerCase();
-        return target.includes(query.toLowerCase());
-      })
+      .filter((p) => (active === "All" ? true : p.category === active))
+      .filter((p) => getProductPrice(p) <= price)
+      .filter((p) =>
+        query === ""
+          ? true
+          : p.name.toLowerCase().includes(query.toLowerCase()) ||
+            p.description.toLowerCase().includes(query.toLowerCase()),
+      )
       .sort((a, b) => {
-        if (sort === "price-low") return getProductPrice(a) - getProductPrice(b);
-        if (sort === "price-high") return getProductPrice(b) - getProductPrice(a);
-        if (sort === "newest") return Date.parse(b.created_at || b.createdAt) - Date.parse(a.created_at || a.createdAt);
+        if (sortKey === "price-low") return getProductPrice(a) - getProductPrice(b);
+        if (sortKey === "price-high") return getProductPrice(b) - getProductPrice(a);
+        if (sortKey === "newest") return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         return b.popularity - a.popularity;
       });
-  }, [products, active, price, query, sort]);
+  }, [products, active, price, query, sortKey]);
 
   return (
     <div className="pb-24">
@@ -69,27 +73,48 @@ function Collections() {
         dangerouslySetInnerHTML={{
           __html: safeJsonStringify({
             "@context": "https://schema.org",
-            "@type": "ItemList",
-            "name": "Eternity Ooty Handcrafted Chocolate & Gourmet Collection",
-            "description": "Authentic Ooty homemade chocolates, Nilgiri tea, Nilgiri spices and roasted coffee.",
-            "numberOfItems": filtered.length,
-            "itemListElement": filtered.map((item: any, idx: number) => ({
-              "@type": "ListItem",
-              "position": idx + 1,
-              "item": {
-                "@type": "Product",
-                "name": item.name,
-                "description": item.description,
-                "url": `https://eternitychocolateooty.in/products/${item.slug}`,
-                "image": item.images?.[0] ? resolveProductImage(item.images[0]) : undefined,
-                "offers": {
-                  "@type": "Offer",
-                  "priceCurrency": "INR",
-                  "price": item.sale_price !== undefined && item.sale_price !== null ? item.sale_price : item.price,
-                  "availability": (item.stock_quantity ?? 10) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-                }
+            "@graph": [
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://eternitychocolateooty.in"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Collections",
+                    "item": "https://eternitychocolateooty.in/collections"
+                  }
+                ]
+              },
+              {
+                "@type": "ItemList",
+                "name": "Eternity Ooty Handcrafted Chocolate & Gourmet Collection",
+                "description": "Authentic Ooty homemade chocolates, Nilgiri tea, Nilgiri spices and roasted coffee.",
+                "numberOfItems": filtered.length,
+                "itemListElement": filtered.map((item: any, idx: number) => ({
+                  "@type": "ListItem",
+                  "position": idx + 1,
+                  "item": {
+                    "@type": "Product",
+                    "name": item.name,
+                    "description": item.description,
+                    "url": `https://eternitychocolateooty.in/products/${item.slug}`,
+                    "image": item.images?.[0] ? resolveProductImage(item.images[0]) : undefined,
+                    "offers": {
+                      "@type": "Offer",
+                      "priceCurrency": "INR",
+                      "price": item.sale_price !== undefined && item.sale_price !== null ? item.sale_price : item.price,
+                      "availability": (item.stock_quantity ?? 10) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                    }
+                  }
+                }))
               }
-            }))
+            ]
           })
         }}
       />

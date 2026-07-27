@@ -21,9 +21,11 @@ export const Route = createFileRoute("/story")({
         content: "A small family kitchen in the misty Ooty hills, slow-crafting unforgettable artisan chocolates for three decades.",
       },
       { property: "og:url", content: "https://eternitychocolateooty.in/story" },
+      { property: "og:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Our Story — ETERNITY Handcrafted Chocolates Ooty" },
       { name: "twitter:description", content: "Family-owned artisan chocolate boutique slow-crafting chocolates in Ooty." },
+      { name: "twitter:image", content: "https://eternitychocolateooty.in/assets/logo.png" },
     ],
     links: [
       { rel: "canonical", href: "https://eternitychocolateooty.in/story" },
@@ -41,29 +43,50 @@ function Story() {
         dangerouslySetInnerHTML={{
           __html: safeJsonStringify({
             "@context": "https://schema.org",
-            "@type": "AboutPage",
-            "name": "Our Story — Eternity Handcrafted Chocolates Ooty",
-            "description": "Family-owned artisan chocolate boutique slow-crafting small-batch homemade chocolates in Ooty.",
-            "url": "https://eternitychocolateooty.in/story",
-            "mainEntity": {
-              "@type": "Organization",
-              "name": "Eternity Chocolate Ooty",
-              "url": "https://eternitychocolateooty.in",
-              "logo": "https://eternitychocolateooty.in/assets/logo.png",
-              "foundingLocation": {
-                "@type": "Place",
-                "name": "Ooty, Nilgiris, Tamil Nadu, India"
+            "@graph": [
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://eternitychocolateooty.in"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Our Story",
+                    "item": "https://eternitychocolateooty.in/story"
+                  }
+                ]
               },
-              "knowsAbout": [
-                "Handcrafted Ooty Homemade Chocolates",
-                "Authentic Nilgiri Teas",
-                "Ooty Mountain Spices",
-                "Roasted Nilgiri Coffee"
-              ],
-              "sameAs": [
-                "https://www.instagram.com/eternitychocolateooty/"
-              ]
-            }
+              {
+                "@type": "AboutPage",
+                "name": "Our Story — Eternity Handcrafted Chocolates Ooty",
+                "description": "Family-owned artisan chocolate boutique slow-crafting small-batch homemade chocolates in Ooty.",
+                "url": "https://eternitychocolateooty.in/story",
+                "mainEntity": {
+                  "@type": "Organization",
+                  "name": "Eternity Chocolate Ooty",
+                  "url": "https://eternitychocolateooty.in",
+                  "logo": "https://eternitychocolateooty.in/assets/logo.png",
+                  "foundingLocation": {
+                    "@type": "Place",
+                    "name": "Ooty, Nilgiris, Tamil Nadu, India"
+                  },
+                  "knowsAbout": [
+                    "Handcrafted Ooty Homemade Chocolates",
+                    "Authentic Nilgiri Teas",
+                    "Ooty Mountain Spices",
+                    "Roasted Nilgiri Coffee"
+                  ],
+                  "sameAs": [
+                    "https://www.instagram.com/eternitychocolateooty/"
+                  ]
+                }
+              }
+            ]
           })
         }}
       />
