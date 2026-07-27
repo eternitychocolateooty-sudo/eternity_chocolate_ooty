@@ -83,7 +83,7 @@
       <body>
         <div class="container">
           <h1>ETERNITY Chocolates Ooty — XML Sitemap</h1>
-          <p>This XML Sitemap helps search engines like Google discover and index pages on <strong>eternitychocolateooty.com</strong>.</p>
+          <p>This XML Sitemap helps search engines like Google discover and index pages on <strong>eternitychocolateooty.in</strong>.</p>
           <table>
             <thead>
               <tr>

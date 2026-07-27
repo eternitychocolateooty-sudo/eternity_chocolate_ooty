@@ -20,13 +20,13 @@ export const Route = createFileRoute("/story")({
         property: "og:description",
         content: "A small family kitchen in the misty Ooty hills, slow-crafting unforgettable artisan chocolates for three decades.",
       },
-      { property: "og:url", content: "https://eternitychocolateooty.com/story" },
+      { property: "og:url", content: "https://eternitychocolateooty.in/story" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Our Story — ETERNITY Handcrafted Chocolates Ooty" },
       { name: "twitter:description", content: "Family-owned artisan chocolate boutique slow-crafting chocolates in Ooty." },
     ],
     links: [
-      { rel: "canonical", href: "https://eternitychocolateooty.com/story" },
+      { rel: "canonical", href: "https://eternitychocolateooty.in/story" },
     ],
   }),
   component: Story,
@@ -47,8 +47,8 @@ function Story() {
             "mainEntity": {
               "@type": "Organization",
               "name": "ETERNITY Handcrafted Chocolates",
-              "url": "https://eternitychocolateooty.com",
-              "logo": "https://eternitychocolateooty.com/assets/logo.png"
+              "url": "https://eternitychocolateooty.in",
+              "logo": "https://eternitychocolateooty.in/assets/logo.png"
             }
           })
         }}

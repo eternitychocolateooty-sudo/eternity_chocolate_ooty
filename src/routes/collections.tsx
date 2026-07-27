@@ -19,13 +19,13 @@ export const Route = createFileRoute("/collections")({
         property: "og:description",
         content: "Premium artisan chocolates, aromatic spices, tea, and coffee from the misty hills of Ooty.",
       },
-      { property: "og:url", content: "https://eternitychocolateooty.com/collections" },
+      { property: "og:url", content: "https://eternitychocolateooty.in/collections" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Shop Handcrafted Chocolates — ETERNITY Ooty" },
       { name: "twitter:description", content: "Artisan dark chocolates, milk chocolates, nut fudges & spices from Ooty." },
     ],
     links: [
-      { rel: "canonical", href: "https://eternitychocolateooty.com/collections" },
+      { rel: "canonical", href: "https://eternitychocolateooty.in/collections" },
     ],
   }),
   component: Collections,
@@ -76,7 +76,7 @@ function Collections() {
               "@type": "ListItem",
               "position": idx + 1,
               "name": item.name,
-              "url": `https://eternitychocolateooty.com/products/${item.slug}`
+              "url": `https://eternitychocolateooty.in/products/${item.slug}`
             }))
           })
         }}

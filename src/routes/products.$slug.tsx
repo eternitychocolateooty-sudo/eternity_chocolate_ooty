@@ -31,7 +31,7 @@ export const Route = createFileRoute("/products/$slug")({
     const prodName = loaderData?.product.name ?? "Handcrafted Chocolate";
     const prodDesc = loaderData?.product.description ?? "Premium handmade chocolate from Ooty.";
     const prodImg = resolveProductImage(loaderData?.product.images?.[0]);
-    const prodUrl = `https://eternitychocolateooty.com/products/${loaderData?.product.slug ?? ""}`;
+    const prodUrl = `https://eternitychocolateooty.in/products/${loaderData?.product.slug ?? ""}`;
 
     return {
       meta: [
@@ -103,7 +103,7 @@ function ProductDetails() {
             },
             "offers": {
               "@type": "Offer",
-              "url": `https://eternitychocolateooty.com/products/${product.slug}`,
+              "url": `https://eternitychocolateooty.in/products/${product.slug}`,
               "priceCurrency": "INR",
               "price": product.sale_price !== undefined && product.sale_price !== null ? product.sale_price : product.price,
               "itemCondition": "https://schema.org/NewCondition",

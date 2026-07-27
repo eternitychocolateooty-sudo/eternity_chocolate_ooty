@@ -27,4 +27,4 @@ User-agent: PerplexityBot
 Allow: /
 
 # Sitemap Location
-Sitemap: https://eternitychocolateooty.com/sitemap.xml
+Sitemap: https://eternitychocolateooty.in/sitemap.xml
