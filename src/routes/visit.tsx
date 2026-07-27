@@ -39,12 +39,14 @@ function Visit() {
           __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "Store",
-            "name": "ETERNITY Handcrafted Chocolates",
-            "image": "https://eternitychocolateooty.in/assets/logo.png",
             "@id": "https://eternitychocolateooty.in/#store",
-            "url": "https://eternitychocolateooty.in",
-            "telephone": "084894 62100",
-            "priceRange": "$$",
+            "name": "Eternity Chocolate Ooty",
+            "image": "https://eternitychocolateooty.in/assets/logo.png",
+            "url": "https://eternitychocolateooty.in/visit",
+            "telephone": "+91-8489462100",
+            "priceRange": "₹₹",
+            "currenciesAccepted": "INR",
+            "paymentAccepted": "Cash, Credit Card, UPI, Debit Card",
             "address": {
               "@type": "PostalAddress",
               "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
@@ -58,6 +60,13 @@ function Visit() {
               "latitude": 11.4116,
               "longitude": 76.7088
             },
+            "hasMap": "https://maps.google.com/?q=Charring+Cross+Ooty+Eternity+Chocolate",
+            "areaServed": [
+              "Ooty",
+              "Nilgiris",
+              "Tamil Nadu",
+              "India"
+            ],
             "openingHoursSpecification": {
               "@type": "OpeningHoursSpecification",
               "dayOfWeek": [

@@ -61,42 +61,71 @@ function Home() {
         dangerouslySetInnerHTML={{
           __html: safeJsonStringify({
             "@context": "https://schema.org",
-            "@type": "Store",
-            "name": "ETERNITY Handcrafted Chocolates",
-            "image": "https://eternitychocolateooty.in/assets/logo.png",
-            "@id": "https://eternitychocolateooty.in/#store",
-            "url": "https://eternitychocolateooty.in",
-            "telephone": "084894 62100",
-            "priceRange": "$$",
-            "address": {
-              "@type": "PostalAddress",
-              "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
-              "addressLocality": "Ooty",
-              "addressRegion": "Tamil Nadu",
-              "postalCode": "643001",
-              "addressCountry": "IN"
-            },
-            "geo": {
-              "@type": "GeoCoordinates",
-              "latitude": 11.4116,
-              "longitude": 76.7088
-            },
-            "openingHoursSpecification": {
-              "@type": "OpeningHoursSpecification",
-              "dayOfWeek": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
-              ],
-              "opens": "09:00",
-              "closes": "22:30"
-            },
-            "sameAs": [
-              "https://www.instagram.com/eternitychocolateooty/"
+            "@graph": [
+              {
+                "@type": "Store",
+                "@id": "https://eternitychocolateooty.in/#store",
+                "name": "Eternity Chocolate Ooty",
+                "alternateName": "Eternity Handcrafted Chocolates",
+                "description": "Family-owned artisan chocolate boutique in Charring Cross, Ooty. Handcrafted homemade chocolates, authentic Nilgiri teas, Nilgiri spices & roasted coffee.",
+                "image": "https://eternitychocolateooty.in/assets/logo.png",
+                "url": "https://eternitychocolateooty.in",
+                "telephone": "+91-8489462100",
+                "priceRange": "₹₹",
+                "currenciesAccepted": "INR",
+                "paymentAccepted": "Cash, Credit Card, UPI, Debit Card, Net Banking",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "No 7,8, Bharathiyar Complex, Charring Cross",
+                  "addressLocality": "Ooty",
+                  "addressRegion": "Tamil Nadu",
+                  "postalCode": "643001",
+                  "addressCountry": "IN"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 11.4116,
+                  "longitude": 76.7088
+                },
+                "hasMap": "https://maps.google.com/?q=Charring+Cross+Ooty+Eternity+Chocolate",
+                "openingHoursSpecification": [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": [
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday",
+                      "Sunday"
+                    ],
+                    "opens": "09:00",
+                    "closes": "22:30"
+                  }
+                ],
+                "sameAs": [
+                  "https://www.instagram.com/eternitychocolateooty/"
+                ]
+              },
+              {
+                "@type": "WebSite",
+                "@id": "https://eternitychocolateooty.in/#website",
+                "url": "https://eternitychocolateooty.in",
+                "name": "Eternity Chocolate Ooty",
+                "description": "Buy handcrafted Ooty homemade chocolates, Nilgiri tea, spices and roasted coffee online.",
+                "publisher": {
+                  "@id": "https://eternitychocolateooty.in/#store"
+                },
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "https://eternitychocolateooty.in/collections?search={search_term_string}"
+                  },
+                  "query-input": "required name=search_term_string"
+                }
+              }
             ]
           })
         }}

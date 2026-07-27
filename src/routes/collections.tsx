@@ -70,13 +70,25 @@ function Collections() {
           __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "ItemList",
-            "name": "ETERNITY Ooty Handcrafted Chocolate Collection",
+            "name": "Eternity Ooty Handcrafted Chocolate & Gourmet Collection",
+            "description": "Authentic Ooty homemade chocolates, Nilgiri tea, Nilgiri spices and roasted coffee.",
             "numberOfItems": filtered.length,
-            "itemListElement": filtered.map((item, idx) => ({
+            "itemListElement": filtered.map((item: any, idx: number) => ({
               "@type": "ListItem",
               "position": idx + 1,
-              "name": item.name,
-              "url": `https://eternitychocolateooty.in/products/${item.slug}`
+              "item": {
+                "@type": "Product",
+                "name": item.name,
+                "description": item.description,
+                "url": `https://eternitychocolateooty.in/products/${item.slug}`,
+                "image": item.images?.[0] ? resolveProductImage(item.images[0]) : undefined,
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": "INR",
+                  "price": item.sale_price !== undefined && item.sale_price !== null ? item.sale_price : item.price,
+                  "availability": (item.stock_quantity ?? 10) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                }
+              }
             }))
           })
         }}

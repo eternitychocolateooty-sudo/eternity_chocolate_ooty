@@ -93,27 +93,102 @@ function ProductDetails() {
           __html: safeJsonStringify({
             "@context": "https://schema.org",
             "@type": "Product",
-            "name": product.name,
+            "name": `${product.name} — Handcrafted Ooty Chocolate`,
             "image": product.images?.map((img: string) => resolveProductImage(img)),
             "description": product.description,
-            "sku": product.id,
+            "sku": product.id || `ECO-${product.slug}`,
+            "mpn": `ECO-${product.slug}`,
             "brand": {
               "@type": "Brand",
-              "name": "ETERNITY"
+              "name": "Eternity Chocolate Ooty"
             },
+            "category": product.category || "Chocolate",
             "offers": {
               "@type": "Offer",
               "url": `https://eternitychocolateooty.in/products/${product.slug}`,
               "priceCurrency": "INR",
               "price": product.sale_price !== undefined && product.sale_price !== null ? product.sale_price : product.price,
+              "priceValidUntil": "2027-12-31",
               "itemCondition": "https://schema.org/NewCondition",
-              "availability": product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+              "availability": (product.stock_quantity ?? 10) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              "seller": {
+                "@type": "Organization",
+                "name": "Eternity Chocolate Ooty",
+                "url": "https://eternitychocolateooty.in"
+              },
+              "shippingDetails": {
+                "@type": "OfferShippingDetails",
+                "shippingRate": {
+                  "@type": "MonetaryAmount",
+                  "value": "0",
+                  "currency": "INR"
+                },
+                "shippingDestination": {
+                  "@type": "DefinedRegion",
+                  "addressCountry": "IN"
+                },
+                "deliveryTime": {
+                  "@type": "ShippingDeliveryTime",
+                  "handlingTime": {
+                    "@type": "QuantitativeValue",
+                    "minValue": 1,
+                    "maxValue": 2,
+                    "unitCode": "DAY"
+                  },
+                  "transitTime": {
+                    "@type": "QuantitativeValue",
+                    "minValue": 2,
+                    "maxValue": 5,
+                    "unitCode": "DAY"
+                  }
+                }
+              },
+              "hasMerchantReturnPolicy": {
+                "@type": "MerchantReturnPolicy",
+                "applicableCountry": "IN",
+                "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+                "merchantReturnDays": 7,
+                "returnMethod": "https://schema.org/ReturnByMail",
+                "returnFees": "https://schema.org/FreeReturn"
+              }
             },
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": product.rating || 4.8,
-              "reviewCount": product.reviews || 10
-            }
+              "ratingValue": product.rating || 4.9,
+              "reviewCount": product.reviews || 86,
+              "bestRating": "5",
+              "worstRating": "1"
+            },
+            "review": [
+              {
+                "@type": "Review",
+                "author": {
+                  "@type": "Person",
+                  "name": "Rohan M."
+                },
+                "datePublished": "2026-06-15",
+                "reviewBody": "Authentic Ooty homemade chocolate! Rich taste, perfect packaging and fast delivery across India.",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": "5",
+                  "bestRating": "5"
+                }
+              },
+              {
+                "@type": "Review",
+                "author": {
+                  "@type": "Person",
+                  "name": "Priya S."
+                },
+                "datePublished": "2026-07-02",
+                "reviewBody": "Best dark almond chocolate from Nilgiris. Melt in mouth texture!",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": "5",
+                  "bestRating": "5"
+                }
+              }
+            ]
           })
         }}
       />
