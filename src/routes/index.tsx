@@ -491,17 +491,23 @@ function Home() {
           <h2 className="font-display text-3xl md:text-4xl">@eternity</h2>
           <p className="text-muted-foreground mt-2">Follow the chocolate-making moments</p>
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
-            {[g5, g1, processImg, g3].map((img, i) => (
+            {[
+              { img: g5, title: "Ooty Homemade Chocolates Display" },
+              { img: g1, title: "Handcrafted Dark Almond Chocolate" },
+              { img: processImg, title: "Artisan Chocolate Making Process" },
+              { img: g3, title: "Gourmet Ooty Chocolate Gift Boxes" },
+            ].map((item, i) => (
               <a
                 key={i}
                 href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                 target="_blank"
                 rel="noreferrer noopener"
+                aria-label={`View ${item.title} on Eternity Chocolates Instagram`}
                 className="group relative overflow-hidden rounded-2xl aspect-square"
               >
                 <img
-                  src={img}
-                  alt=""
+                  src={item.img}
+                  alt={item.title}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />

@@ -188,6 +188,7 @@ function Visit() {
               href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
               target="_blank"
               rel="noreferrer noopener"
+              aria-label="Follow Eternity Chocolates on Instagram"
               className="grid h-12 w-12 place-items-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
             >
               <Instagram className="h-4 w-4" />
