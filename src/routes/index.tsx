@@ -12,6 +12,7 @@ import {
   Star,
 } from "lucide-react";
 import heroImg from "@/assets/hero-chocolate.webp";
+import heroMobileImg from "@/assets/hero-chocolate-mobile.webp";
 import processImg from "@/assets/process.webp";
 import storeImg from "@/assets/store.webp";
 import ootyImg from "@/assets/ooty.webp";
@@ -134,14 +135,18 @@ function Home() {
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={heroImg}
-            alt="Handcrafted chocolate bars dusted with gold against the misty Ooty hills"
-            className="absolute inset-0 h-full w-full object-cover scale-105 animate-float"
-            width={1920}
-            height={1080}
-            fetchPriority="high"
-          />
+          <picture>
+            <source media="(max-width: 640px)" srcSet={heroMobileImg} type="image/webp" />
+            <img
+              src={heroImg}
+              alt="Handcrafted chocolate bars dusted with gold against the misty Ooty hills"
+              className="absolute inset-0 h-full w-full object-cover scale-105 animate-float"
+              width={1920}
+              height={1080}
+              fetchPriority="high"
+              decoding="async"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.16_0.03_45/0.85)] via-[oklch(0.18_0.03_45/0.55)] to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
