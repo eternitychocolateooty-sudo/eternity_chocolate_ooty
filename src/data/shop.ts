@@ -1,9 +1,9 @@
-import dark from "@/assets/dark.jpg";
-import gift from "@/assets/gift.jpg";
-import homemade from "@/assets/homemade.jpg";
-import milk from "@/assets/milk.jpg";
-import nuts from "@/assets/nuts.jpg";
-import seasonal from "@/assets/seasonal.jpg";
+import dark from "@/assets/dark.webp";
+import gift from "@/assets/gift.webp";
+import homemade from "@/assets/homemade.webp";
+import milk from "@/assets/milk.webp";
+import nuts from "@/assets/nuts.webp";
+import seasonal from "@/assets/seasonal.webp";
 
 export type ProductCategory = "Chocolate" | "Spices" | "Tea" | "Coffee";
 

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import processImg from "@/assets/process.jpg";
-import storeImg from "@/assets/store.jpg";
-import ootyImg from "@/assets/ooty.jpg";
-import g2 from "@/assets/g2.jpg";
+import processImg from "@/assets/process.webp";
+import storeImg from "@/assets/store.webp";
+import ootyImg from "@/assets/ooty.webp";
+import g2 from "@/assets/g2.webp";
 
 import { safeJsonStringify } from "@/lib/utils";
 

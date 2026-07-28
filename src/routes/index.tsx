@@ -11,17 +11,17 @@ import {
   Clock,
   Star,
 } from "lucide-react";
-import heroImg from "@/assets/hero-chocolate.jpg";
-import processImg from "@/assets/process.jpg";
-import storeImg from "@/assets/store.jpg";
-import ootyImg from "@/assets/ooty.jpg";
-import dark from "@/assets/dark.jpg";
-import milk from "@/assets/milk.jpg";
-import nuts from "@/assets/nuts.jpg";
-import gift from "@/assets/gift.jpg";
-import g1 from "@/assets/g1.jpg";
-import g3 from "@/assets/g3.jpg";
-import g5 from "@/assets/g5.jpg";
+import heroImg from "@/assets/hero-chocolate.webp";
+import processImg from "@/assets/process.webp";
+import storeImg from "@/assets/store.webp";
+import ootyImg from "@/assets/ooty.webp";
+import dark from "@/assets/dark.webp";
+import milk from "@/assets/milk.webp";
+import nuts from "@/assets/nuts.webp";
+import gift from "@/assets/gift.webp";
+import g1 from "@/assets/g1.webp";
+import g3 from "@/assets/g3.webp";
+import g5 from "@/assets/g5.webp";
 import { useCart } from "@/components/CartContext";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { Plus } from "lucide-react";

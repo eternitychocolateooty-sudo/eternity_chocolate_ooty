@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import g1 from "@/assets/g1.jpg";
-import g2 from "@/assets/g2.jpg";
-import g3 from "@/assets/g3.jpg";
-import g4 from "@/assets/g4.jpg";
-import g5 from "@/assets/g5.jpg";
-import g6 from "@/assets/g6.jpg";
-import processImg from "@/assets/process.jpg";
-import storeImg from "@/assets/store.jpg";
-import dark from "@/assets/dark.jpg";
-import gift from "@/assets/gift.jpg";
-import seasonal from "@/assets/seasonal.jpg";
+import g1 from "@/assets/g1.webp";
+import g2 from "@/assets/g2.webp";
+import g3 from "@/assets/g3.webp";
+import g4 from "@/assets/g4.webp";
+import g5 from "@/assets/g5.webp";
+import g6 from "@/assets/g6.webp";
+import processImg from "@/assets/process.webp";
+import storeImg from "@/assets/store.webp";
+import dark from "@/assets/dark.webp";
+import gift from "@/assets/gift.webp";
+import seasonal from "@/assets/seasonal.webp";
 import { X } from "lucide-react";
 
 export const Route = createFileRoute("/gallery")({

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Phone, Clock, Instagram, MessageCircle, Mail, Star } from "lucide-react";
-import storeImg from "@/assets/store.jpg";
+import storeImg from "@/assets/store.webp";
 import { safeJsonStringify } from "@/lib/utils";
 import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 
