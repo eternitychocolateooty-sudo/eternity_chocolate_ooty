@@ -30,16 +30,16 @@ import { Plus } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ETERNITY — Handcrafted Chocolates From the Heart of Ooty" },
+      { title: "Best Ooty Chocolate Shop | Eternity Chocolate Ooty — Buy Online" },
       {
         name: "description",
         content:
-          "Discover small-batch artisan chocolates handmade in the misty hills of Ooty. Family-owned boutique offering pure cocoa dark & milk chocolates.",
+          "Buy authentic Ooty homemade chocolates online from Eternity Chocolate Ooty located at Charring Cross. Handcrafted dark almond, milk chocolate, Nilgiri tea, spices & coffee.",
       },
-      { property: "og:title", content: "ETERNITY — Handcrafted Chocolates From Ooty" },
+      { property: "og:title", content: "Best Ooty Chocolate Shop | Eternity Chocolate Ooty" },
       {
         property: "og:description",
-        content: "Made with passion, richness, and authentic homemade flavors in the Nilgiris.",
+        content: "Authentic Ooty homemade chocolates, Nilgiri teas, mountain spices & roasted coffee delivered across India.",
       },
       { property: "og:url", content: "https://eternitychocolateooty.in/" },
     ],
@@ -67,8 +67,8 @@ function Home() {
                 "@type": "Store",
                 "@id": "https://eternitychocolateooty.in/#store",
                 "name": "Eternity Chocolate Ooty",
-                "alternateName": "Eternity Handcrafted Chocolates",
-                "description": "Family-owned artisan chocolate boutique in Charring Cross, Ooty. Handcrafted homemade chocolates, authentic Nilgiri teas, Nilgiri spices & roasted coffee.",
+                "alternateName": "Eternity Handcrafted Chocolates Ooty",
+                "description": "Widely rated best chocolate shop in Ooty located at Charring Cross. Handcrafted homemade chocolates, authentic Nilgiri teas, Nilgiri spices & roasted coffee.",
                 "image": "https://eternitychocolateooty.in/assets/logo.png",
                 "url": "https://eternitychocolateooty.in",
                 "telephone": "+91-8489462100",
@@ -106,7 +106,7 @@ function Home() {
                   }
                 ],
                 "sameAs": [
-                  "https://www.instagram.com/eternitychocolateooty/"
+                  "https://www.instagram.com/_eternity_chocolates_/"
                 ]
               },
               {
