@@ -55,14 +55,14 @@ function Collections() {
       .filter((p) =>
         query === ""
           ? true
-          : p.name.toLowerCase().includes(query.toLowerCase()) ||
-            p.description.toLowerCase().includes(query.toLowerCase()),
+          : (p.name || "").toLowerCase().includes(query.toLowerCase()) ||
+            (p.description || "").toLowerCase().includes(query.toLowerCase()),
       )
       .sort((a, b) => {
         if (sortKey === "price-low") return getProductPrice(a) - getProductPrice(b);
         if (sortKey === "price-high") return getProductPrice(b) - getProductPrice(a);
         if (sortKey === "newest") return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        return b.popularity - a.popularity;
+        return (b.popularity || 0) - (a.popularity || 0);
       });
   }, [products, active, price, query, sortKey]);
 
@@ -151,8 +151,8 @@ function Collections() {
             />
           </label>
           <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as SortKey)}
+            value={sortKey}
+            onChange={(event) => setSortKey(event.target.value as SortKey)}
             className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-accent"
           >
             <option value="popular">Popular</option>
