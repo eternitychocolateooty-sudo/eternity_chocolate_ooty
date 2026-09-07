@@ -4,11 +4,18 @@ import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — ETERNITY" },
+      { title: "Privacy Policy — ETERNITY Ooty Chocolates" },
       {
         name: "description",
         content: "Privacy policy describing how ETERNITY collects, uses, and secures your information.",
       },
+      { property: "og:title", content: "Privacy Policy — ETERNITY Ooty" },
+      { property: "og:description", content: "Privacy policy describing how ETERNITY collects and secures your data." },
+      { property: "og:url", content: "https://eternitychocolateooty.in/privacy" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.in/privacy" },
     ],
   }),
   component: PrivacyPolicy,

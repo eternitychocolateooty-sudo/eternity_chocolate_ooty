@@ -4,11 +4,18 @@ import { EmailObfuscator } from "@/components/ui/EmailObfuscator";
 export const Route = createFileRoute("/refund")({
   head: () => ({
     meta: [
-      { title: "Refund & Cancellation Policy — ETERNITY" },
+      { title: "Refund & Cancellation Policy — ETERNITY Ooty Chocolates" },
       {
         name: "description",
         content: "Refund and cancellation guidelines for ETERNITY artisan chocolates.",
       },
+      { property: "og:title", content: "Refund & Cancellation Policy — ETERNITY Ooty" },
+      { property: "og:description", content: "Refund and cancellation guidelines for ETERNITY artisan chocolates." },
+      { property: "og:url", content: "https://eternitychocolateooty.in/refund" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.in/refund" },
     ],
   }),
   component: RefundPolicy,

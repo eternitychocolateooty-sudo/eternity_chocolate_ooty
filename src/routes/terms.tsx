@@ -3,11 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — ETERNITY" },
+      { title: "Terms & Conditions — ETERNITY Ooty Chocolates" },
       {
         name: "description",
         content: "Terms and conditions for purchasing artisan chocolates from ETERNITY.",
       },
+      { property: "og:title", content: "Terms & Conditions — ETERNITY Ooty" },
+      { property: "og:description", content: "Terms and conditions for purchasing artisan chocolates from ETERNITY." },
+      { property: "og:url", content: "https://eternitychocolateooty.in/terms" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.in/terms" },
     ],
   }),
   component: TermsAndConditions,

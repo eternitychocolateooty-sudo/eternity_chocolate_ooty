@@ -3,11 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/shipping")({
   head: () => ({
     meta: [
-      { title: "Shipping Policy — ETERNITY" },
+      { title: "Shipping Policy — ETERNITY Ooty Chocolates" },
       {
         name: "description",
         content: "Shipping policy for ETERNITY artisan chocolates, processing timelines, and charges.",
       },
+      { property: "og:title", content: "Shipping Policy — ETERNITY Ooty" },
+      { property: "og:description", content: "Shipping policy for ETERNITY artisan chocolates and processing timelines." },
+      { property: "og:url", content: "https://eternitychocolateooty.in/shipping" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://eternitychocolateooty.in/shipping" },
     ],
   }),
   component: ShippingPolicy,
