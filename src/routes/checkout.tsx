@@ -288,13 +288,33 @@ function Checkout() {
         }
       });
 
-      const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock } = orderRes;
+      const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock, gateway, zaakpayPayload } = orderRes as any;
 
+      if (gateway === "ZAAKPAY" && zaakpayPayload) {
+        // Automatically create and submit POST form to Zaakpay gateway
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = zaakpayPayload.postUrl;
+
+        Object.entries(zaakpayPayload.params as Record<string, string>).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+          }
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
 
       // 2. Handle Mock Checkout / Offline Sandbox Mode
       if (isMock) {
         console.warn("Processing checkout in simulation sandbox mode.");
-        alert(`Offline Sandbox Mode: Cashfree keys are missing on the live server.\n(hasAppId: ${String((orderRes as any).hasAppId)}, hasSecretKey: ${String((orderRes as any).hasSecretKey)}, env: ${(orderRes as any).cashfreeEnv})`);
+        alert(`Offline Sandbox Mode: Payment keys are missing on the live server.\n(gateway: ${gateway})`);
         
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({

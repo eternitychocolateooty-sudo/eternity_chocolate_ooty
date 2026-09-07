@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 import { getPlatformEnv } from "./env.server";
+import { calculateZaakpayChecksum, getZaakpayTransactUrl, verifyZaakpayChecksum } from "./zaakpay";
 import { z } from "zod";
 
 // Zod schemas for input validation
@@ -34,8 +35,9 @@ const createCheckoutOrderSchema = z.object({
 
 const verifyCheckoutPaymentSchema = z.object({
   orderId: z.string().uuid("Invalid order ID format").optional(),
-  cashfreeOrderId: z.string().min(5).max(100).regex(/^CF-ORD-[\w-]+$/, "Invalid Cashfree Order ID format"),
-  cashfreePaymentId: z.string().min(5).max(100).regex(/^[\w-]+$/, "Invalid Cashfree Payment ID format").optional(),
+  cashfreeOrderId: z.string().min(1).max(100).optional(),
+  cashfreePaymentId: z.string().min(1).max(100).optional(),
+  responseCode: z.string().optional(),
   isMock: z.boolean().optional(),
 });
 
@@ -407,60 +409,95 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const tax = 0;
     const total = subtotal + shippingFee;
 
-    const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
-    const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
-    const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
+    const gateway = (getPlatformEnv("VITE_PAYMENT_GATEWAY") || "ZAAKPAY").toUpperCase();
+    const zaakpayMerchantId = getPlatformEnv("VITE_ZAAKPAY_MERCHANT_IDENTIFIER") || getPlatformEnv("ZAAKPAY_MERCHANT_IDENTIFIER");
+    const zaakpaySecretKey = getPlatformEnv("ZAAKPAY_SECRET_KEY");
 
-    let cashfreeOrderId = `CF-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    let cashfreeOrderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let paymentSessionId = "";
     let isMock = false;
+    let zaakpayPayload: { postUrl: string; params: Record<string, string> } | null = null;
 
-    console.log("Server: createCheckoutOrder env check:", { hasAppId: !!appId, hasSecretKey: !!secretKey, cashfreeEnv });
+    if (gateway === "ZAAKPAY" && zaakpayMerchantId && zaakpaySecretKey) {
+      const requestUrl = request ? new URL(request.url) : null;
+      const hostOrigin = requestUrl ? requestUrl.origin : "https://eternitychocolateooty.in";
+      const returnUrl = `${hostOrigin}/checkout?order_id=${cashfreeOrderId}`;
 
-    if (!appId || !secretKey || appId === "your-cashfree-app-id" || secretKey === "your-cashfree-secret-key") {
-      console.warn("Cashfree API credentials missing or placeholder. Initiating MOCK payment order.");
-      paymentSessionId = `mock_session_${Math.random().toString(36).substring(2, 15)}`;
-      isMock = true;
+      const amountInPaisa = Math.round(total * 100).toString();
+      const nameParts = customerInfo.name.trim().split(/\s+/);
+
+      const rawParams: Record<string, string> = {
+        merchantIdentifier: zaakpayMerchantId,
+        orderId: cashfreeOrderId,
+        amount: amountInPaisa,
+        currency: "INR",
+        returnUrl: returnUrl,
+        buyerEmail: customerInfo.email,
+        buyerFirstName: shippingAddress.firstName || nameParts[0] || customerInfo.name,
+        buyerLastName: shippingAddress.lastName || nameParts.slice(1).join(" ") || "Customer",
+        buyerPhoneNumber: customerInfo.phone,
+        buyerAddress: shippingAddress.address,
+        buyerCity: shippingAddress.city,
+        buyerState: shippingAddress.state,
+        buyerPincode: shippingAddress.pincode,
+        buyerCountry: "IND",
+      };
+
+      const checksum = calculateZaakpayChecksum(rawParams, zaakpaySecretKey);
+      zaakpayPayload = {
+        postUrl: getZaakpayTransactUrl(),
+        params: { ...rawParams, checksum },
+      };
     } else {
-      try {
-        const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-        const requestUrl = request ? new URL(request.url) : null;
-        const hostOrigin = requestUrl ? requestUrl.origin : "https://eternitychocolateooty.in";
-        const returnUrl = `${hostOrigin}/checkout?order_id={order_id}`;
+      const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
+      const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
+      const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
 
-        const response = await fetch(`https://${host}/pg/orders`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-version": "2023-08-01",
-            "x-client-id": appId,
-            "x-client-secret": secretKey,
-          },
-          body: JSON.stringify({
-            order_id: cashfreeOrderId,
-            order_amount: Number(total.toFixed(2)),
-            order_currency: "INR",
-            customer_details: {
-              customer_id: customerInfo.userId || `guest_${Date.now()}`,
-              customer_name: customerInfo.name,
-              customer_email: customerInfo.email,
-              customer_phone: customerInfo.phone,
-            },
-            order_meta: {
-              return_url: returnUrl,
-            },
-          }),
-        });
+      if (!appId || !secretKey || appId === "your-cashfree-app-id" || secretKey === "your-cashfree-secret-key") {
+        console.warn("Payment API credentials missing or placeholder. Initiating MOCK payment order.");
+        paymentSessionId = `mock_session_${Math.random().toString(36).substring(2, 15)}`;
+        isMock = true;
+      } else {
+        try {
+          const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
+          const requestUrl = request ? new URL(request.url) : null;
+          const hostOrigin = requestUrl ? requestUrl.origin : "https://eternitychocolateooty.in";
+          const returnUrl = `${hostOrigin}/checkout?order_id={order_id}`;
 
-        const resData: any = await response.json();
-        if (!response.ok || !resData.payment_session_id) {
-          throw new Error(resData?.message || "Failed to create Cashfree order");
+          const response = await fetch(`https://${host}/pg/orders`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-version": "2023-08-01",
+              "x-client-id": appId,
+              "x-client-secret": secretKey,
+            },
+            body: JSON.stringify({
+              order_id: cashfreeOrderId,
+              order_amount: Number(total.toFixed(2)),
+              order_currency: "INR",
+              customer_details: {
+                customer_id: customerInfo.userId || `guest_${Date.now()}`,
+                customer_name: customerInfo.name,
+                customer_email: customerInfo.email,
+                customer_phone: customerInfo.phone,
+              },
+              order_meta: {
+                return_url: returnUrl,
+              },
+            }),
+          });
+
+          const resData: any = await response.json();
+          if (!response.ok || !resData.payment_session_id) {
+            throw new Error(resData?.message || "Failed to create Cashfree order");
+          }
+
+          paymentSessionId = resData.payment_session_id;
+        } catch (err: any) {
+          console.error("Cashfree order creation failed:", err);
+          throw new Error(`Payment initialization failed: ${err.message}`);
         }
-
-        paymentSessionId = resData.payment_session_id;
-      } catch (err: any) {
-        console.error("Cashfree order creation failed:", err);
-        throw new Error(`Cashfree initialization failed: ${err.message}`);
       }
     }
 
@@ -528,9 +565,8 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       paymentSessionId,
       amount: total.toFixed(2),
       isMock,
-      hasAppId: !!appId,
-      hasSecretKey: !!secretKey,
-      cashfreeEnv,
+      gateway,
+      zaakpayPayload,
     };
   });
 
@@ -551,13 +587,37 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       return { success: true };
     }
 
+    const gateway = (getPlatformEnv("VITE_PAYMENT_GATEWAY") || "ZAAKPAY").toUpperCase();
+
+    if (gateway === "ZAAKPAY") {
+      const lookupId = orderId || cashfreeOrderId;
+      if (!lookupId) throw new Error("Missing order identification for verification.");
+
+      let query = supabaseAdmin.from("orders").select("id, payment_status, cashfree_order_id");
+      if (orderId) {
+        query = query.eq("id", orderId);
+      } else {
+        query = query.eq("cashfree_order_id", cashfreeOrderId);
+      }
+
+      const { data: dbOrder, error: orderErr } = await query.maybeSingle();
+      if (orderErr || !dbOrder) {
+        throw new Error(`Failed to resolve order matching ID: ${lookupId}`);
+      }
+
+      if (dbOrder.payment_status !== "paid") {
+        await completeOrder(dbOrder.id, `pay_zk_${dbOrder.cashfree_order_id || Date.now()}`);
+      }
+
+      return { success: true };
+    }
 
     const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
     const secretKey = getPlatformEnv("CASHFREE_SECRET_KEY");
     const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
 
     if (!appId || !secretKey) {
-      throw new Error("Cashfree API key configuration is missing on the server.");
+      throw new Error("Payment API key configuration is missing on the server.");
     }
 
     try {
@@ -601,7 +661,7 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
 
       return { success: true };
     } catch (err: any) {
-      console.error("Cashfree verification error:", err);
+      console.error("Payment verification error:", err);
       throw new Error(err.message);
     }
   });

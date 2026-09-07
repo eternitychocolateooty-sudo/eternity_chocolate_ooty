@@ -128,6 +128,65 @@ export default {
       }
     }
 
+    // Helper to check if an origin belongs to an allowed payment gateway
+    const isPaymentGatewayOrigin = (hostName: string): boolean => {
+      const allowedGateways = [
+        "zaakpay.com",
+        "zaakstaging.zaakpay.com",
+        "mobikwik.com",
+        "cashfree.com",
+        "sandbox.cashfree.com",
+        "api.cashfree.com",
+      ];
+      return allowedGateways.some(
+        (domain) => hostName === domain || hostName.endsWith("." + domain)
+      );
+    };
+
+    // 1.5 Handle Payment Gateway Postbacks to /checkout
+    if (request.method === "POST" && url.pathname === "/checkout") {
+      try {
+        const formData = await request.clone().formData();
+        const orderId = formData.get("orderId")?.toString() ||
+                        formData.get("order_id")?.toString() ||
+                        url.searchParams.get("order_id") ||
+                        "";
+        const responseCode = formData.get("responseCode")?.toString() || "";
+        const responseDescription = formData.get("responseDescription")?.toString() || "";
+
+        console.log("Server: Payment gateway postback received on /checkout:", { orderId, responseCode, responseDescription });
+
+        if (orderId) {
+          const isSuccess = responseCode === "100" || responseDescription.toLowerCase().includes("success");
+          if (isSuccess) {
+            const { supabaseAdmin } = await import("./lib/supabase");
+            const { completeOrder } = await import("./lib/server-functions");
+
+            const { data: dbOrder } = await supabaseAdmin
+              .from("orders")
+              .select("id, payment_status")
+              .or(`id.eq.${orderId},cashfree_order_id.eq.${orderId}`)
+              .maybeSingle();
+
+            if (dbOrder && dbOrder.payment_status !== "paid") {
+              await completeOrder(dbOrder.id, `pay_zk_${orderId}`);
+            }
+
+            return Response.redirect(`${url.origin}/checkout?order_id=${encodeURIComponent(orderId)}`, 303);
+          } else {
+            const errMsg = encodeURIComponent(responseDescription || "Payment was not successful");
+            return Response.redirect(`${url.origin}/checkout?error=${errMsg}`, 303);
+          }
+        }
+      } catch (err) {
+        console.error("Server: Failed to process payment postback body:", err);
+        const orderId = url.searchParams.get("order_id");
+        if (orderId) {
+          return Response.redirect(`${url.origin}/checkout?order_id=${encodeURIComponent(orderId)}`, 303);
+        }
+      }
+    }
+
     // 2. CSRF Protection for state-changing requests
     if (request.method !== "GET" && request.method !== "HEAD") {
       const origin = request.headers.get("Origin");
@@ -137,7 +196,7 @@ export default {
       if (origin) {
         try {
           const originUrl = new URL(origin);
-          if (originUrl.host !== host) {
+          if (originUrl.host !== host && !isPaymentGatewayOrigin(originUrl.host)) {
             return new Response("CSRF Validation Failed: Origin mismatch", { status: 403 });
           }
         } catch {
@@ -146,7 +205,7 @@ export default {
       } else if (referer) {
         try {
           const refererUrl = new URL(referer);
-          if (refererUrl.host !== host) {
+          if (refererUrl.host !== host && !isPaymentGatewayOrigin(refererUrl.host)) {
             return new Response("CSRF Validation Failed: Referer mismatch", { status: 403 });
           }
         } catch {
@@ -178,8 +237,8 @@ export default {
       // Permissions-Policy
       newHeaders.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self), usb=(), gyroscope=(), accelerometer=(), fullscreen=(self)");
       // Cross-origin headers
-      newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
-      newHeaders.set("Cross-Origin-Resource-Policy", "same-origin");
+      newHeaders.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+      newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin");
       newHeaders.set("X-DNS-Prefetch-Control", "on");
       newHeaders.set("Origin-Agent-Cluster", "?1");
       // Remove server information leak
@@ -207,17 +266,19 @@ export default {
 
         const csp = [
           "default-src 'self'",
-          `script-src 'self' 'nonce-${nonce}' https://sdk.cashfree.com https://*.cashfree.com`,
+          `script-src 'self' 'nonce-${nonce}' https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://*.mobikwik.com`,
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-          "img-src 'self' data: https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co",
+          "img-src 'self' data: https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://*.zaakpay.com https://*.mobikwik.com",
           "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com",
-          "frame-src 'self' https://maps.google.com https://*.google.com https://sdk.cashfree.com https://*.cashfree.com",
+          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
+          "frame-src 'self' https://maps.google.com https://*.google.com https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
+          "form-action 'self' https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.cashfree.com",
           "object-src 'none'",
           "base-uri 'self'",
-          "frame-ancestors 'none'",
           "upgrade-insecure-requests"
         ].join("; ");
+
+        newHeaders.set("Content-Security-Policy", csp);
 
         newHeaders.set("Content-Security-Policy", csp);
 
