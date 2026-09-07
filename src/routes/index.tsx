@@ -266,11 +266,11 @@ function Home() {
           <div className="relative">
             <img
               src={storeImg}
-              alt="Inside the ETERNITY chocolate boutique in Ooty"
+              alt="ETERNITY The Exclusive Chocolate Shop storefront at Charring Cross, Ooty"
               loading="lazy"
-              className="rounded-3xl shadow-luxe w-full"
+              className="rounded-3xl shadow-luxe w-full object-cover"
               width={1280}
-              height={1280}
+              height={720}
             />
             <div className="absolute -bottom-6 -right-6 bg-foreground text-background rounded-2xl px-5 py-4 shadow-luxe hidden md:block">
               <p className="font-display text-3xl text-accent">28</p>
