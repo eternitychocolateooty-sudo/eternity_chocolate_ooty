@@ -8,16 +8,12 @@ import img3 from "@/assets/gallery-3.webp";
 import img4 from "@/assets/gallery-4.webp";
 import img5 from "@/assets/gallery-5.webp";
 import img6 from "@/assets/gallery-6.webp";
-import img7 from "@/assets/gallery-7.webp";
-import img8 from "@/assets/gallery-8.webp";
 import img9 from "@/assets/gallery-9.webp";
 import img10 from "@/assets/gallery-10.webp";
 import img11 from "@/assets/gallery-11.webp";
 import img12 from "@/assets/gallery-12.webp";
-import img13 from "@/assets/gallery-13.webp";
 import img14 from "@/assets/gallery-14.webp";
 import img15 from "@/assets/gallery-15.webp";
-import img16 from "@/assets/gallery-16.webp";
 import img17 from "@/assets/gallery-17.webp";
 
 export const Route = createFileRoute("/gallery")({
@@ -45,23 +41,19 @@ export const Route = createFileRoute("/gallery")({
 });
 
 const images = [
-  { src: img1, title: "Artisan Chocolate Display", alt: "Handcrafted Ooty chocolates displayed elegantly at Eternity Store" },
-  { src: img2, title: "Fresh Hand-Rolled Truffles", alt: "Freshly made dark chocolate truffles with Nilgiri cocoa" },
-  { src: img3, title: "Signature Gift Boxes", alt: "Luxury gift boxes packaged for sweet cravings in Ooty" },
-  { src: img4, title: "Dark Almond Crunch", alt: "Premium dark almond chocolate slabs with golden honey" },
-  { src: img5, title: "Ooty Storefront Ambiance", alt: "Eternity Chocolate Ooty boutique ambiance at Charring Cross" },
-  { src: img6, title: "Velvet Milk Chocolates", alt: "Creamy silken milk chocolate bars handcrafted in small batches" },
-  { src: img7, title: "Nilgiri Mountain Spices", alt: "Authentic cardamom, quilled cinnamon & cloves from Ooty hills" },
-  { src: img8, title: "Old-Recipe Walnut Fudge", alt: "Soft homemade walnut fudge made fresh every morning" },
-  { src: img9, title: "Single-Origin 70% Cocoa", alt: "Dark single-origin chocolate with rich roasted cocoa notes" },
-  { src: img10, title: "Boutique Showcase", alt: "Handcrafted chocolate counter at Eternity Charring Cross store" },
-  { src: img11, title: "Roasted Nilgiri Coffee", alt: "Freshly roasted aromatic coffee beans & cocoa nibs" },
-  { src: img12, title: "Artisan Gift Selection", alt: "Curated gourmet chocolate gift boxes for visitors in Ooty" },
-  { src: img13, title: "Tempering & Craftsmanship", alt: "Artisan chocolate tempering process in the Ooty kitchen" },
-  { src: img14, title: "Assorted Chocolate Pralines", alt: "Rich assorted chocolate pralines and nut clusters" },
-  { src: img15, title: "Nilgiri Tea & Chocolate Pairing", alt: "Authentic Nilgiri green tea paired with handcrafted chocolates" },
-  { src: img16, title: "Warm Cocoa Delights", alt: "Delicious hot chocolate and artisanal dessert treats" },
-  { src: img17, title: "Eternity Ooty Heritage", alt: "The warmth and rich heritage of Eternity Chocolates Ooty" },
+  { src: img1, alt: "Handcrafted Ooty chocolates displayed elegantly at Eternity Store" },
+  { src: img2, alt: "Freshly made dark chocolate truffles with Nilgiri cocoa" },
+  { src: img3, alt: "Luxury gift boxes packaged for sweet cravings in Ooty" },
+  { src: img4, alt: "Premium dark almond chocolate slabs with golden honey" },
+  { src: img5, alt: "Eternity Chocolate Ooty boutique ambiance at Charring Cross" },
+  { src: img6, alt: "Creamy silken milk chocolate bars handcrafted in small batches" },
+  { src: img9, alt: "Dark single-origin chocolate with rich roasted cocoa notes" },
+  { src: img10, alt: "Handcrafted chocolate counter at Eternity Charring Cross store" },
+  { src: img11, alt: "Freshly roasted aromatic coffee beans & cocoa nibs" },
+  { src: img12, alt: "Curated gourmet chocolate gift boxes for visitors in Ooty" },
+  { src: img14, alt: "Rich assorted chocolate pralines and nut clusters" },
+  { src: img15, alt: "Authentic Nilgiri green tea paired with handcrafted chocolates" },
+  { src: img17, alt: "The warmth and rich heritage of Eternity Chocolates Ooty" },
 ];
 
 function Gallery() {
@@ -109,12 +101,6 @@ function Gallery() {
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f0a07]/90 via-[#0f0a07]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-left">
-                <span className="text-xs uppercase tracking-widest text-accent font-medium">
-                  {img.title}
-                </span>
-                <p className="text-xs text-stone-300 mt-1 line-clamp-2">{img.alt}</p>
-              </div>
             </button>
           ))}
         </div>
@@ -152,27 +138,16 @@ function Gallery() {
             <ChevronRight className="h-6 w-6" />
           </button>
 
-          {/* Image and Title */}
+          {/* Clean Image Only — No description or text */}
           <div
-            className="flex flex-col items-center max-h-[90vh] max-w-[90vw]"
+            className="flex items-center justify-center max-h-[90vh] max-w-[90vw]"
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={images[open].src}
               alt={images[open].alt}
-              className="max-h-[75vh] max-w-[90vw] rounded-2xl border border-amber-900/30 shadow-2xl object-contain"
+              className="max-h-[85vh] max-w-[90vw] rounded-2xl border border-amber-900/30 shadow-2xl object-contain"
             />
-            <div className="mt-4 text-center">
-              <h3 className="font-display text-xl md:text-2xl text-amber-200">
-                {images[open].title}
-              </h3>
-              <p className="text-sm text-stone-400 mt-1 max-w-md">
-                {images[open].alt}
-              </p>
-              <span className="text-xs text-amber-500/80 mt-2 block font-mono">
-                {open + 1} / {images.length}
-              </span>
-            </div>
           </div>
         </div>
       )}

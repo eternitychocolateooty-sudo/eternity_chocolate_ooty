@@ -2,30 +2,51 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCart, parseVariant } from "@/components/CartContext";
-import { formatMoney } from "@/data/shop";
+import { findProduct, formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params }) => {
-    const { data: product, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("slug", params.slug)
-      .single();
+    let product: any = null;
 
-    if (error || !product) {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", params.slug)
+        .single();
+
+      if (!error && data) {
+        product = {
+          ...data,
+          sale_price: data.sale_price !== null ? Number(data.sale_price) : undefined,
+          price: Number(data.price),
+          rating: Number(data.rating),
+        };
+      }
+    } catch {
+      // Fall through to static product fallback if Supabase fails
+    }
+
+    if (!product) {
+      const staticProd = findProduct(params.slug);
+      if (staticProd) {
+        product = {
+          ...staticProd,
+          sale_price: staticProd.salePrice,
+          ingredients: staticProd.ingredients || [],
+          images: staticProd.images || [],
+          variants: staticProd.variants || [],
+        };
+      }
+    }
+
+    if (!product) {
       throw notFound();
     }
 
-    const normalizedProduct = {
-      ...product,
-      sale_price: product.sale_price !== null ? Number(product.sale_price) : undefined,
-      price: Number(product.price),
-      rating: Number(product.rating),
-    };
-
-    return { product: normalizedProduct };
+    return { product };
   },
   head: ({ loaderData }) => {
     const prodName = loaderData?.product.name ?? "Handcrafted Chocolate";
