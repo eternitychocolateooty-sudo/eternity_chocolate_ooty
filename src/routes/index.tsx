@@ -221,11 +221,14 @@ function Home() {
                   key={p.id}
                   className={`group flex flex-col reveal reveal-delay-${(i % 4) + 1} hover-lift bg-card rounded-3xl overflow-hidden shadow-soft`}
                 >
-                  <Link to="/products/$slug" params={{ slug: p.slug }} className="block aspect-[4/5] overflow-hidden">
+                  <Link to="/products/$slug" params={{ slug: p.slug }} className="block aspect-[4/5] overflow-hidden bg-secondary/30">
                     <img
-                      src={resolveProductImage(p.images[0])}
+                      src={resolveProductImage(p.images?.[0])}
                       alt={p.name}
-                      loading="lazy"
+                      loading={i < 2 ? "eager" : "lazy"}
+                      // @ts-expect-error fetchpriority is standard in modern HTML
+                      fetchpriority={i === 0 ? "high" : "auto"}
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   </Link>

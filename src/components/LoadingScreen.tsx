@@ -46,6 +46,9 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
 
     const fadeOutTimeout = setTimeout(() => {
       setFadeState("fade-out");
+      // Unlock overflow as soon as fade begins so browser can layout and compute viewport intersections
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
       if (onReveal) {
         onReveal();
       }
@@ -55,6 +58,11 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
       onComplete();
+      // Dispatch scroll & resize events so native lazy loading triggers immediately without waiting for user action
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("scroll"));
+        window.dispatchEvent(new Event("resize"));
+      }
     }, 1050);
 
     return () => {
@@ -65,6 +73,10 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       clearTimeout(completeTimeout);
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("scroll"));
+        window.dispatchEvent(new Event("resize"));
+      }
     };
   }, [onReveal, onComplete]);
 

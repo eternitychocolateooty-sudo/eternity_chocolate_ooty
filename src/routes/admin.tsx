@@ -38,7 +38,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminConsole,
 });
 
-const compressImage = (file: File, maxW = 1600, maxH = 1600, quality = 0.90): Promise<Blob> => {
+const compressImage = (file: File, maxW = 1200, maxH = 1200, quality = 0.82): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -67,15 +67,24 @@ const compressImage = (file: File, maxW = 1600, maxH = 1600, quality = 0.90): Pr
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, width, height);
 
+        // Convert to WebP for modern compression, small file size and rapid browser decoding
         canvas.toBlob(
           (blob) => {
             if (blob) {
               resolve(blob);
             } else {
-              reject(new Error("Canvas conversion to Blob failed"));
+              // Fallback to jpeg only if webp canvas is unsupported
+              canvas.toBlob(
+                (fallbackBlob) => {
+                  if (fallbackBlob) resolve(fallbackBlob);
+                  else reject(new Error("Canvas conversion to Blob failed"));
+                },
+                "image/jpeg",
+                quality
+              );
             }
           },
-          "image/jpeg",
+          "image/webp",
           quality
         );
       };
@@ -260,14 +269,18 @@ function AdminConsole() {
       for (const item of imagesList) {
         if (item.file) {
           let fileToUpload: File | Blob = item.file;
-          let fileExt = item.file.name.split(".").pop() || "jpg";
+          let fileExt = "webp";
+          let contentType = "image/webp";
 
           if (item.file.type.startsWith("image/")) {
             try {
-              fileToUpload = await compressImage(item.file, 1600, 1600, 0.90);
-              fileExt = "jpg";
+              fileToUpload = await compressImage(item.file, 1200, 1200, 0.82);
+              fileExt = "webp";
+              contentType = "image/webp";
             } catch (err) {
               console.error("Image compression failed, using original file:", err);
+              fileExt = item.file.name.split(".").pop() || "webp";
+              contentType = item.file.type;
             }
           }
 
@@ -275,7 +288,8 @@ function AdminConsole() {
           const { error: uploadErr } = await supabase.storage
             .from("product-images")
             .upload(fileName, fileToUpload, {
-              contentType: fileExt === "jpg" ? "image/jpeg" : item.file.type
+              contentType,
+              cacheControl: "31536000, public, immutable",
             });
 
           if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);

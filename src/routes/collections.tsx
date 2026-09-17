@@ -194,17 +194,20 @@ function Collections() {
               </div>
             ))
           ) : (
-            filtered.map((product) => (
+            filtered.map((product, idx) => (
               <article
                 key={product.id}
                 className="group overflow-hidden rounded-3xl bg-card shadow-soft hover-lift"
               >
                 <Link to="/products/$slug" params={{ slug: product.slug }} className="block">
-                  <div className="relative aspect-[4/5] overflow-hidden">
+                  <div className="relative aspect-[4/5] overflow-hidden bg-secondary/30">
                     <img
-                      src={resolveProductImage(product.images[0])}
+                      src={resolveProductImage(product.images?.[0])}
                       alt={product.name}
-                      loading="lazy"
+                      loading={idx < 6 ? "eager" : "lazy"}
+                      // @ts-expect-error fetchpriority is standard in modern HTML
+                      fetchpriority={idx < 3 ? "high" : "auto"}
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-[1200ms] group-hover:scale-110"
                     />
                     <span className="absolute left-4 top-4 glass rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">
