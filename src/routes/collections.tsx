@@ -205,8 +205,7 @@ function Collections() {
                       src={resolveProductImage(product.images?.[0])}
                       alt={product.name}
                       loading={idx < 6 ? "eager" : "lazy"}
-                      // @ts-expect-error fetchpriority is standard in modern HTML
-                      fetchpriority={idx < 3 ? "high" : "auto"}
+                      fetchPriority={idx < 3 ? "high" : "auto"}
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-[1200ms] group-hover:scale-110"
                     />

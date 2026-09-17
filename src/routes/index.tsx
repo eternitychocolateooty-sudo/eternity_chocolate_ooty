@@ -20,9 +20,9 @@ import dark from "@/assets/dark.webp";
 import milk from "@/assets/milk.webp";
 import nuts from "@/assets/nuts.webp";
 import gift from "@/assets/gift.webp";
-import g1 from "@/assets/g1.webp";
-import g3 from "@/assets/g3.webp";
-import g5 from "@/assets/g5.webp";
+import hotChoc1 from "@/assets/hot-chocolate-1.webp";
+import hotChoc2 from "@/assets/hot-chocolate-2.webp";
+import galleryImg1 from "@/assets/gallery-1.webp";
 import { useCart } from "@/components/CartContext";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -226,8 +226,7 @@ function Home() {
                       src={resolveProductImage(p.images?.[0])}
                       alt={p.name}
                       loading={i < 2 ? "eager" : "lazy"}
-                      // @ts-expect-error fetchpriority is standard in modern HTML
-                      fetchpriority={i === 0 ? "high" : "auto"}
+                      fetchPriority={i === 0 ? "high" : "auto"}
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
@@ -408,18 +407,25 @@ function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[g1, g3, g5, processImg].map((img, i) => (
-              <div
+            {[
+              { src: storeImg, alt: "Eternity The Exclusive Chocolate Shop storefront at Charring Cross, Ooty" },
+              { src: hotChoc1, alt: "Eternity signature thick hot chocolate with marshmallows" },
+              { src: hotChoc2, alt: "Fresh hot chocolate served at Eternity Chocolate boutique counter" },
+              { src: galleryImg1, alt: "Handcrafted Ooty chocolates display counter at Eternity" },
+            ].map((img, i) => (
+              <Link
                 key={i}
-                className={`overflow-hidden rounded-2xl shadow-soft ${i % 3 === 0 ? "md:row-span-2 aspect-[3/4] md:aspect-auto" : "aspect-square"}`}
+                to="/gallery"
+                className="group overflow-hidden rounded-2xl shadow-soft aspect-[4/3] bg-secondary/30 block"
               >
                 <img
-                  src={img}
-                  alt=""
+                  src={img.src}
+                  alt={img.alt}
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+                  decoding="async"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -495,10 +501,10 @@ function Home() {
           <p className="text-muted-foreground mt-2">Follow the chocolate-making moments</p>
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
             {[
-              { img: g5, title: "Ooty Homemade Chocolates Display" },
-              { img: g1, title: "Handcrafted Dark Almond Chocolate" },
-              { img: processImg, title: "Artisan Chocolate Making Process" },
-              { img: g3, title: "Gourmet Ooty Chocolate Gift Boxes" },
+              { img: storeImg, title: "Eternity The Exclusive Chocolate Shop at Charring Cross" },
+              { img: hotChoc1, title: "Signature Eternity Thick Hot Chocolate" },
+              { img: hotChoc2, title: "Fresh Hot Chocolate at Eternity Boutique Counter" },
+              { img: galleryImg1, title: "Handcrafted Ooty Chocolates Display Counter" },
             ].map((item, i) => (
               <a
                 key={i}

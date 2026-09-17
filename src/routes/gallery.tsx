@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
+import storeImg from "@/assets/store.webp";
+import hotChoc1 from "@/assets/hot-chocolate-1.webp";
+import hotChoc2 from "@/assets/hot-chocolate-2.webp";
 import img1 from "@/assets/gallery-1.webp";
 import img2 from "@/assets/gallery-2.webp";
 import img3 from "@/assets/gallery-3.webp";
@@ -41,6 +44,9 @@ export const Route = createFileRoute("/gallery")({
 });
 
 const images = [
+  { src: storeImg, alt: "Eternity The Exclusive Chocolate Shop storefront and boutique entrance at Charring Cross, Ooty" },
+  { src: hotChoc1, alt: "Eternity signature thick hot chocolate topped with marshmallows" },
+  { src: hotChoc2, alt: "Fresh hot chocolate served at Eternity Chocolate boutique counter" },
   { src: img1, alt: "Handcrafted Ooty chocolates displayed elegantly at Eternity Store" },
   { src: img2, alt: "Freshly made dark chocolate truffles with Nilgiri cocoa" },
   { src: img3, alt: "Luxury gift boxes packaged for sweet cravings in Ooty" },
@@ -93,11 +99,13 @@ function Gallery() {
               onClick={() => setOpen(i)}
               className="group relative block w-full overflow-hidden rounded-2xl shadow-soft border border-amber-950/20 bg-[#150B08] transition-all duration-500 hover:-translate-y-1 hover:shadow-luxe focus:outline-none focus:ring-2 focus:ring-accent"
             >
-              <div className="aspect-[4/3] w-full overflow-hidden">
+              <div className="aspect-[4/3] w-full overflow-hidden bg-secondary/30">
                 <img
                   src={img.src}
                   alt={img.alt}
-                  loading="lazy"
+                  loading={i < 4 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  decoding="async"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
