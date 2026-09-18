@@ -410,8 +410,8 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const total = subtotal + shippingFee;
 
     const gateway = (getPlatformEnv("VITE_PAYMENT_GATEWAY") || "ZAAKPAY").toUpperCase();
-    const zaakpayMerchantId = getPlatformEnv("VITE_ZAAKPAY_MERCHANT_IDENTIFIER") || getPlatformEnv("ZAAKPAY_MERCHANT_IDENTIFIER");
-    const zaakpaySecretKey = getPlatformEnv("ZAAKPAY_SECRET_KEY");
+    const zaakpayMerchantId = (getPlatformEnv("VITE_ZAAKPAY_MERCHANT_IDENTIFIER") || getPlatformEnv("ZAAKPAY_MERCHANT_IDENTIFIER") || "").trim();
+    const zaakpaySecretKey = (getPlatformEnv("ZAAKPAY_SECRET_KEY") || getPlatformEnv("ZAAKPAY_API_KEY") || "").trim();
 
     const isZaakpayGateway = gateway === "ZAAKPAY";
     const orderRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
