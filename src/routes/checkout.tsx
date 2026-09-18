@@ -155,6 +155,11 @@ function Checkout() {
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [paymentNotice, setPaymentNotice] = useState<{
+    type: "warning" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Form State
   const [email, setEmail] = useState("");
@@ -185,12 +190,23 @@ function Checkout() {
             setPlaced(true);
             window.scrollTo({ top: 0, behavior: "smooth" });
           } else {
-            alert("Payment verification failed. Please contact support.");
+            setPaymentNotice({
+              type: "error",
+              title: "Payment Verification Incomplete",
+              message: "We could not verify payment for this order. If money was debited, please contact our team at eternitychocolateooty@gmail.com."
+            });
           }
         } catch (err: any) {
-          alert(`Payment verification error: ${err.message}`);
+          setPaymentNotice({
+            type: "error",
+            title: "Verification Notice",
+            message: err?.message || "Could not complete payment verification. Please try again."
+          });
         } finally {
           setIsProcessing(false);
+          if (typeof window !== "undefined") {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         }
       }
     };
@@ -198,7 +214,20 @@ function Checkout() {
     verifyLivePayment();
 
     if (queryError) {
-      alert(`Payment failed: ${decodeURIComponent(queryError)}`);
+      const decoded = decodeURIComponent(queryError);
+      const isCancelled = decoded.toLowerCase().includes("cancel");
+      setPaymentNotice({
+        type: isCancelled ? "warning" : "error",
+        title: isCancelled ? "Payment Cancelled" : "Payment Incomplete",
+        message: isCancelled
+          ? "You cancelled the payment transaction. Your hamper is safe and your shipping details are saved—you can try placing your order again whenever you're ready."
+          : decoded,
+      });
+
+      // Clear the query parameter immediately from the browser address bar so it never recurs
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     }
     
     if (user) {
@@ -357,7 +386,7 @@ function Checkout() {
       // 2. Handle Mock Checkout / Offline Sandbox Mode
       if (isMock) {
         console.warn("Processing checkout in simulation sandbox mode.");
-        alert(`Offline Sandbox Mode: Payment keys are missing on the live server.\n(gateway: ${gateway})`);
+        setCheckoutError(`Offline Sandbox Mode: Payment keys are missing on the live server. (gateway: ${gateway})`);
         
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({
@@ -374,13 +403,13 @@ function Checkout() {
           setPlaced(true);
           window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
-          alert("Mock payment simulation failed. Please try again.");
+          setCheckoutError("Payment simulation could not be completed. Please try again.");
         }
       } else {
         // 3. Live Cashfree Web Checkout SDK
         const sdkLoaded = await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
         if (!sdkLoaded) {
-          alert("Could not load the Cashfree checkout script. Check your internet connection.");
+          setCheckoutError("Could not load the Cashfree checkout script. Check your internet connection.");
           setIsProcessing(false);
           return;
         }
@@ -442,7 +471,33 @@ function Checkout() {
         <div>
           <h1 className="mb-8 font-display text-4xl">Checkout</h1>
 
-
+          {paymentNotice && (
+            <div
+              className={`mb-8 flex items-start justify-between gap-4 rounded-2xl p-5 border shadow-sm transition-all duration-300 animate-in fade-in ${
+                paymentNotice.type === "warning"
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
+                  : "bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-200"
+              }`}
+            >
+              <div className="flex gap-3.5">
+                <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+                  {paymentNotice.type === "warning" ? "🍫" : "⚠️"}
+                </span>
+                <div className="space-y-1">
+                  <p className="font-semibold text-base font-serif">{paymentNotice.title}</p>
+                  <p className="text-sm opacity-90 leading-relaxed">{paymentNotice.message}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPaymentNotice(null)}
+                className="shrink-0 rounded-full p-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer text-lg leading-none"
+                aria-label="Dismiss notification"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-10">
             <fieldset disabled={isProcessing}>
