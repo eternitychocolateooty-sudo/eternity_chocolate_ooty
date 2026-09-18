@@ -272,7 +272,6 @@ export default {
           "font-src 'self' https://fonts.gstatic.com",
           "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
           "frame-src 'self' https://maps.google.com https://*.google.com https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
-          "form-action 'self' https://zaakpay.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.cashfree.com",
           "object-src 'none'",
           "base-uri 'self'",
           "upgrade-insecure-requests"
