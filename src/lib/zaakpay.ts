@@ -161,10 +161,10 @@ export function sanitizeZaakpayParam(val: string): string {
  * Returns Zaakpay API base URL depending on environment mode.
  */
 export function getZaakpayBaseUrl(): string {
-  const mode = (getPlatformEnv("VITE_ZAAKPAY_MODE") || getPlatformEnv("ZAAKPAY_MODE") || "TEST").toUpperCase();
-  return mode === "PROD" || mode === "PRODUCTION" || mode === "LIVE"
-    ? "https://api.zaakpay.com"
-    : "https://zaakstaging.zaakpay.com";
+  const mode = (getPlatformEnv("VITE_ZAAKPAY_MODE") || getPlatformEnv("ZAAKPAY_MODE") || "PROD").toUpperCase();
+  return mode === "TEST" || mode === "STAGING"
+    ? "https://zaakstaging.zaakpay.com"
+    : "https://api.zaakpay.com";
 }
 
 /**

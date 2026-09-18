@@ -155,6 +155,10 @@ function Checkout() {
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [zaakpayRedirect, setZaakpayRedirect] = useState<{
+    postUrl: string;
+    params: Record<string, string>;
+  } | null>(null);
 
   // Form State
   const [email, setEmail] = useState("");
@@ -245,6 +249,22 @@ function Checkout() {
     }
   }, [stateField, cart.setShippingState]);
 
+  useEffect(() => {
+    if (zaakpayRedirect) {
+      const timer = setTimeout(() => {
+        const directForm = document.getElementById("zaakpay-redirect-form") as HTMLFormElement;
+        if (directForm) {
+          try {
+            directForm.submit();
+          } catch (err) {
+            console.warn("Auto-submit was suppressed by browser:", err);
+          }
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [zaakpayRedirect]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isProcessing) {
@@ -323,23 +343,8 @@ function Checkout() {
           throw new Error("Zaakpay payment payload was not generated. Check your Zaakpay credentials.");
         }
 
-        // Automatically create and submit POST form to Zaakpay gateway
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = zaakpayPayload.postUrl;
-
-        Object.entries(zaakpayPayload.params as Record<string, string>).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value).trim() !== "") {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = key;
-            input.value = String(value).trim();
-            form.appendChild(input);
-          }
-        });
-
-        document.body.appendChild(form);
-        HTMLFormElement.prototype.submit.call(form);
+        setIsProcessing(false);
+        setZaakpayRedirect(zaakpayPayload);
         return;
       }
 
@@ -617,6 +622,50 @@ function Checkout() {
           <Row label="Total" value={formatMoney(cart.total)} bold />
         </aside>
       </div>
+
+      {zaakpayRedirect && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-card text-card-foreground border border-border p-8 rounded-3xl max-w-md w-full text-center shadow-2xl space-y-6">
+            <div className="relative mx-auto w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+              <span className="text-xl">🍫</span>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-display text-2xl text-foreground font-semibold">
+                Connecting to Zaakpay
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Redirecting to the secure Zaakpay payment gateway. Please do not refresh or close this window.
+              </p>
+            </div>
+
+            <form
+              id="zaakpay-redirect-form"
+              action={zaakpayRedirect.postUrl}
+              method="POST"
+              className="w-full space-y-4"
+            >
+              {Object.entries(zaakpayRedirect.params).map(([key, value]) => (
+                <input key={key} type="hidden" name={key} value={value} />
+              ))}
+
+              <button
+                type="submit"
+                className="w-full rounded-full bg-primary py-4 px-6 font-semibold text-primary-foreground shadow-soft hover:opacity-95 active:scale-[0.98] transition-all text-sm cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Proceed to Payment Now</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </form>
+
+            <p className="text-xs text-muted-foreground">
+              If your browser did not redirect automatically, click the button above to proceed.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
