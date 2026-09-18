@@ -4,4 +4,9 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "vars": {
+    "VITE_PAYMENT_GATEWAY": "ZAAKPAY",
+    "VITE_ZAAKPAY_MERCHANT_IDENTIFIER": "2dcbb0b7a5104307a252017d56d5fe50",
+    "VITE_ZAAKPAY_MODE": "PROD"
+  }
 }

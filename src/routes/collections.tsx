@@ -176,9 +176,9 @@ function Collections() {
             <span>Under {formatMoney(price)}</span>
             <input
               type="range"
-              min={300}
+              min={10}
               max={6000}
-              step={100}
+              step={10}
               value={price}
               onChange={(event) => setPrice(Number(event.target.value))}
             />
