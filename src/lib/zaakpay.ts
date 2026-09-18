@@ -27,16 +27,26 @@ export function calculateZaakpayChecksum(
   params: Record<string, string | undefined>,
   secretKey: string
 ): string {
+  const cleanKey = (secretKey || "").trim();
   const sortedKeys = Object.keys(params)
-    .filter((k) => k !== "checksum" && params[k] !== undefined && params[k] !== null && params[k] !== "")
+    .filter((k) => k !== "checksum" && params[k] !== undefined && params[k] !== null && String(params[k]).trim() !== "")
     .sort();
 
-  const checksumString = sortedKeys.map((key) => `${key}=${params[key]}`).join("&") + "&";
+  const checksumString = sortedKeys.map((key) => `${key}=${String(params[key]).trim()}`).join("&") + "&";
 
   return crypto
-    .createHmac("sha256", secretKey)
+    .createHmac("sha256", cleanKey)
     .update(checksumString)
     .digest("hex");
+}
+
+/**
+ * Sanitizes input parameters according to Zaakpay specifications
+ * (removing disallowed special characters that cause checksum mismatches).
+ */
+export function sanitizeZaakpayParam(val: string): string {
+  if (!val) return "";
+  return val.replace(/[,#(){}<>`!$%^=+|\':;"~[\]*&\\]/g, "").replace(/\s+/g, " ").trim();
 }
 
 /**

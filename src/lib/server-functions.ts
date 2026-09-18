@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "./supabase";
 import { getPlatformEnv } from "./env.server";
-import { calculateZaakpayChecksum, getZaakpayTransactUrl, verifyZaakpayChecksum } from "./zaakpay";
+import { calculateZaakpayChecksum, getZaakpayTransactUrl, sanitizeZaakpayParam, verifyZaakpayChecksum } from "./zaakpay";
 import { z } from "zod";
 
 // Zod schemas for input validation
@@ -413,7 +413,11 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const zaakpayMerchantId = getPlatformEnv("VITE_ZAAKPAY_MERCHANT_IDENTIFIER") || getPlatformEnv("ZAAKPAY_MERCHANT_IDENTIFIER");
     const zaakpaySecretKey = getPlatformEnv("ZAAKPAY_SECRET_KEY");
 
-    let cashfreeOrderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const isZaakpayGateway = gateway === "ZAAKPAY";
+    const orderRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
+    let cashfreeOrderId = isZaakpayGateway
+      ? `ORD${Date.now()}${orderRandom}`
+      : `ORD-${Date.now()}-${orderRandom}`;
     let paymentSessionId = "";
     let isMock = false;
     let zaakpayPayload: { postUrl: string; params: Record<string, string> } | null = null;
@@ -424,24 +428,32 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       const returnUrl = `${hostOrigin}/checkout?order_id=${cashfreeOrderId}`;
 
       const amountInPaisa = Math.round(total * 100).toString();
-      const nameParts = customerInfo.name.trim().split(/\s+/);
+      const cleanPhone = (customerInfo.phone || "").replace(/\D/g, "").slice(-10);
+      const nameParts = (customerInfo.name || "").trim().split(/\s+/);
+      const cleanFirstName = sanitizeZaakpayParam(shippingAddress.firstName || nameParts[0] || "Customer").slice(0, 50);
+      const cleanLastName = sanitizeZaakpayParam(shippingAddress.lastName || nameParts.slice(1).join(" ") || "Customer").slice(0, 50);
+      const cleanAddress = sanitizeZaakpayParam(shippingAddress.address || "").slice(0, 100);
+      const cleanCity = sanitizeZaakpayParam(shippingAddress.city || "").slice(0, 30);
+      const cleanState = sanitizeZaakpayParam(shippingAddress.state || "").slice(0, 30);
+      const cleanPincode = (shippingAddress.pincode || "").replace(/\D/g, "").slice(0, 6);
 
       const rawParams: Record<string, string> = {
-        merchantIdentifier: zaakpayMerchantId,
+        merchantIdentifier: zaakpayMerchantId.trim(),
         orderId: cashfreeOrderId,
         amount: amountInPaisa,
         currency: "INR",
         returnUrl: returnUrl,
-        buyerEmail: customerInfo.email,
-        buyerFirstName: shippingAddress.firstName || nameParts[0] || customerInfo.name,
-        buyerLastName: shippingAddress.lastName || nameParts.slice(1).join(" ") || "Customer",
-        buyerPhoneNumber: customerInfo.phone,
-        buyerAddress: shippingAddress.address,
-        buyerCity: shippingAddress.city,
-        buyerState: shippingAddress.state,
-        buyerPincode: shippingAddress.pincode,
-        buyerCountry: "IND",
+        buyerEmail: (customerInfo.email || "").trim(),
       };
+
+      if (cleanPhone) rawParams.buyerPhoneNumber = cleanPhone;
+      if (cleanFirstName) rawParams.buyerFirstName = cleanFirstName;
+      if (cleanLastName) rawParams.buyerLastName = cleanLastName;
+      if (cleanAddress) rawParams.buyerAddress = cleanAddress;
+      if (cleanCity) rawParams.buyerCity = cleanCity;
+      if (cleanState) rawParams.buyerState = cleanState;
+      if (cleanPincode) rawParams.buyerPincode = cleanPincode;
+      rawParams.buyerCountry = "India";
 
       const checksum = calculateZaakpayChecksum(rawParams, zaakpaySecretKey);
       zaakpayPayload = {

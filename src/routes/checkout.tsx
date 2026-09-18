@@ -297,11 +297,11 @@ function Checkout() {
         form.action = zaakpayPayload.postUrl;
 
         Object.entries(zaakpayPayload.params as Record<string, string>).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
             const input = document.createElement("input");
             input.type = "hidden";
             input.name = key;
-            input.value = value;
+            input.value = String(value).trim();
             form.appendChild(input);
           }
         });
