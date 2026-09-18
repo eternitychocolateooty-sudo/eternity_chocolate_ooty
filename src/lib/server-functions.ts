@@ -444,12 +444,17 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       const cleanState = sanitizeZaakpayParam(shippingAddress.state || "").slice(0, 30);
       const cleanPincode = (shippingAddress.pincode || "").replace(/\D/g, "").slice(0, 6);
 
+      const today = new Date();
+      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
       const rawParams: Record<string, string> = {
-        merchantIdentifier: zaakpayMerchantId.trim(),
-        orderId: cashfreeOrderId,
         amount: amountInPaisa,
         currency: "INR",
+        merchantIdentifier: zaakpayMerchantId.trim(),
+        orderId: cashfreeOrderId,
+        productDescription: "Eternity Handcrafted Chocolates",
         returnUrl: returnUrl,
+        txnDate: dateString,
         buyerEmail: (customerInfo.email || "").trim(),
       };
 

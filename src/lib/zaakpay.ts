@@ -16,49 +16,145 @@ export interface ZaakpayTransactParams {
   buyerState?: string;
   buyerPincode?: string;
   buyerCountry?: string;
+  productDescription?: string;
+  txnDate?: string;
   [key: string]: string | undefined;
 }
 
 /**
- * Calculates HMAC-SHA256 checksum for Zaakpay parameters.
- * Sorts keys alphabetically, concatenates key=val&, and signs using secretKey.
+ * Official Zaakpay request parameters sequence from Checksum.php
+ */
+export const ZAAKPAY_REQUEST_CHECKSUM_SEQUENCE = [
+  "amount",
+  "bankid",
+  "buyerAddress",
+  "buyerCity",
+  "buyerCountry",
+  "buyerEmail",
+  "buyerFirstName",
+  "buyerLastName",
+  "buyerPhoneNumber",
+  "buyerPincode",
+  "buyerState",
+  "currency",
+  "debitorcredit",
+  "merchantIdentifier",
+  "merchantIpAddress",
+  "mode",
+  "orderId",
+  "product1Description",
+  "product2Description",
+  "product3Description",
+  "product4Description",
+  "productDescription",
+  "productInfo",
+  "purpose",
+  "returnUrl",
+  "shipToAddress",
+  "shipToCity",
+  "shipToCountry",
+  "shipToFirstname",
+  "shipToLastname",
+  "shipToPhoneNumber",
+  "shipToPincode",
+  "shipToState",
+  "showMobile",
+  "txnDate",
+  "txnType",
+  "zpPayOption",
+] as const;
+
+/**
+ * Official Zaakpay response parameters sequence from Checksum.php
+ */
+export const ZAAKPAY_RESPONSE_CHECKSUM_SEQUENCE = [
+  "amount",
+  "bank",
+  "bankid",
+  "cardId",
+  "cardScheme",
+  "cardToken",
+  "cardhashid",
+  "doRedirect",
+  "orderId",
+  "paymentMethod",
+  "paymentMode",
+  "responseCode",
+  "responseDescription",
+  "productDescription",
+  "product1Description",
+  "product2Description",
+  "product3Description",
+  "product4Description",
+  "pgTransId",
+  "pgTransTime",
+] as const;
+
+/**
+ * Builds the exact parameters string according to Zaakpay Checksum::getAllParams()
+ */
+export function buildZaakpayRequestChecksumString(params: Record<string, string | undefined>): string {
+  let all = "";
+  for (const seqvalue of ZAAKPAY_REQUEST_CHECKSUM_SEQUENCE) {
+    if (Object.prototype.hasOwnProperty.call(params, seqvalue)) {
+      const val = params[seqvalue];
+      if (val !== undefined && val !== null && String(val) !== "") {
+        all += `${seqvalue}=${String(val)}&`;
+      }
+    }
+  }
+  return all;
+}
+
+/**
+ * Builds the exact response checksum string according to Zaakpay Checksum::getAllResponseParams()
+ */
+export function buildZaakpayResponseChecksumString(params: Record<string, string | undefined>): string {
+  let all = "";
+  for (const seqvalue of ZAAKPAY_RESPONSE_CHECKSUM_SEQUENCE) {
+    if (Object.prototype.hasOwnProperty.call(params, seqvalue)) {
+      const val = params[seqvalue];
+      if (val !== undefined && val !== null && String(val) !== "") {
+        all += `${seqvalue}=${String(val)}&`;
+      }
+    }
+  }
+  return all;
+}
+
+/**
+ * Calculates HMAC-SHA256 checksum for Zaakpay request parameters using the official sequence.
  */
 export function calculateZaakpayChecksum(
   params: Record<string, string | undefined>,
   secretKey: string
 ): string {
   const cleanKey = (secretKey || "").trim();
-  const sortedKeys = Object.keys(params)
-    .filter((k) => k !== "checksum" && params[k] !== undefined && params[k] !== null && String(params[k]).trim() !== "")
-    .sort();
-
-  const checksumString = sortedKeys.map((key) => `${key}=${String(params[key]).trim()}`).join("&") + "&";
-
-  return crypto
-    .createHmac("sha256", cleanKey)
-    .update(checksumString)
-    .digest("hex");
+  const all = buildZaakpayRequestChecksumString(params);
+  return crypto.createHmac("sha256", cleanKey).update(all).digest("hex");
 }
 
 /**
- * Sanitizes input parameters according to Zaakpay specifications
- * (removing disallowed special characters that cause checksum mismatches).
- */
-export function sanitizeZaakpayParam(val: string): string {
-  if (!val) return "";
-  return val.replace(/[,#(){}<>`!$%^=+|\':;"~[\]*&\\]/g, "").replace(/\s+/g, " ").trim();
-}
-
-/**
- * Verifies Zaakpay return checksum from postback parameters.
+ * Verifies Zaakpay return checksum from postback response parameters using the official sequence.
  */
 export function verifyZaakpayChecksum(
   params: Record<string, string | undefined>,
   receivedChecksum: string,
   secretKey: string
 ): boolean {
-  const calculated = calculateZaakpayChecksum(params, secretKey);
-  return calculated.toLowerCase() === receivedChecksum.toLowerCase();
+  const cleanKey = (secretKey || "").trim();
+  const all = buildZaakpayResponseChecksumString(params);
+  const calculated = crypto.createHmac("sha256", cleanKey).update(all).digest("hex");
+  return calculated.toLowerCase() === (receivedChecksum || "").trim().toLowerCase();
+}
+
+/**
+ * Sanitizes input parameters according to Zaakpay specifications
+ * (removes disallowed characters that may cause checksum mismatches).
+ */
+export function sanitizeZaakpayParam(val: string): string {
+  if (!val) return "";
+  return val.replace(/[,#(){}<>`!$%^=+|\':;"~[\]*&\\]/g, "").replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -72,8 +168,8 @@ export function getZaakpayBaseUrl(): string {
 }
 
 /**
- * Transact API endpoint URL for standard checkout form post.
+ * Transact API endpoint URL for standard checkout form post (V8 from official integration kit).
  */
 export function getZaakpayTransactUrl(): string {
-  return `${getZaakpayBaseUrl()}/api/paymentTransact/V13`;
+  return `${getZaakpayBaseUrl()}/api/paymentTransact/V8`;
 }

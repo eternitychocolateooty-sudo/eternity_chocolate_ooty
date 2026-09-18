@@ -154,6 +154,7 @@ function Checkout() {
   const [placed, setPlaced] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   // Form State
   const [email, setEmail] = useState("");
@@ -250,6 +251,7 @@ function Checkout() {
       return;
     }
 
+    setCheckoutError(null);
     setIsProcessing(true);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -257,33 +259,33 @@ function Checkout() {
     const pincodeRegex = /^\d{6}$/;
 
     if (!firstName.trim() || !lastName.trim()) {
-      alert("Please provide both first name and last name.");
+      setCheckoutError("Please provide both first name and last name.");
       setIsProcessing(false);
       return;
     }
     if (!emailRegex.test(email.trim())) {
-      alert("Please provide a valid email address.");
+      setCheckoutError("Please provide a valid email address.");
       setIsProcessing(false);
       return;
     }
     if (!phoneRegex.test(phone.trim())) {
-      alert("Please provide a valid phone number (10 to 15 digits).");
+      setCheckoutError("Please provide a valid phone number (10 to 15 digits).");
       setIsProcessing(false);
       return;
     }
     if (!address.trim() || !city.trim() || !stateField.trim()) {
-      alert("Please complete all shipping address fields.");
+      setCheckoutError("Please complete all shipping address fields.");
       setIsProcessing(false);
       return;
     }
     if (!pincodeRegex.test(pincode.trim())) {
-      alert("Please provide a valid 6-digit postal pincode.");
+      setCheckoutError("Please provide a valid 6-digit postal pincode.");
       setIsProcessing(false);
       return;
     }
 
     if (cart.items.length === 0) {
-      alert("Your hamper is empty. Please add chocolates to your hamper before placing an order.");
+      setCheckoutError("Your hamper is empty. Please add chocolates to your hamper before placing an order.");
       setIsProcessing(false);
       return;
     }
@@ -383,7 +385,8 @@ function Checkout() {
         });
       }
     } catch (err: any) {
-      alert(`Checkout failed: ${err.message}`);
+      console.error("Checkout order failed:", err);
+      setCheckoutError(err.message || "Failed to initialize payment gateway. Please verify your connection or try again.");
       setIsProcessing(false);
     }
   };
@@ -502,6 +505,13 @@ function Checkout() {
                 </div>
               </div>
             </fieldset>
+
+            {checkoutError && (
+              <div className="mt-4 rounded-2xl bg-red-500/10 border border-red-500/30 p-4 text-red-600 text-sm">
+                <p className="font-semibold text-base">Unable to process order</p>
+                <p className="mt-1">{checkoutError}</p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-4 pt-4 sm:flex-row">
               <button
