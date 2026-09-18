@@ -290,7 +290,11 @@ function Checkout() {
 
       const { orderId, cashfreeOrderId, paymentSessionId, amount, isMock, gateway, zaakpayPayload } = orderRes as any;
 
-      if (gateway === "ZAAKPAY" && zaakpayPayload) {
+      if (gateway === "ZAAKPAY") {
+        if (!zaakpayPayload) {
+          throw new Error("Zaakpay payment payload was not generated. Check your Zaakpay credentials.");
+        }
+
         // Automatically create and submit POST form to Zaakpay gateway
         const form = document.createElement("form");
         form.method = "POST";
@@ -307,7 +311,7 @@ function Checkout() {
         });
 
         document.body.appendChild(form);
-        form.submit();
+        HTMLFormElement.prototype.submit.call(form);
         return;
       }
 

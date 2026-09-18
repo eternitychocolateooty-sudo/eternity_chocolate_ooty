@@ -422,7 +422,14 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     let isMock = false;
     let zaakpayPayload: { postUrl: string; params: Record<string, string> } | null = null;
 
-    if (gateway === "ZAAKPAY" && zaakpayMerchantId && zaakpaySecretKey) {
+    if (gateway === "ZAAKPAY") {
+      if (!zaakpayMerchantId) {
+        throw new Error("Zaakpay Merchant Identifier is not configured on the server.");
+      }
+      if (!zaakpaySecretKey) {
+        throw new Error("Zaakpay Secret Key is missing. Please add ZAAKPAY_SECRET_KEY into Cloudflare Dashboard -> Settings -> Variables and Secrets.");
+      }
+
       const requestUrl = request ? new URL(request.url) : null;
       const hostOrigin = requestUrl ? requestUrl.origin : "https://eternitychocolateooty.in";
       const returnUrl = `${hostOrigin}/checkout?order_id=${cashfreeOrderId}`;
