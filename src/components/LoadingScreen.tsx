@@ -18,6 +18,11 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
 
     // Fast-path for Lighthouse PageSpeed auditor & repeat visits: render immediately for sub-second FCP
     if (isBotOrLighthouse) {
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage?.setItem("eternity_intro_seen", "true");
+        } catch {}
+      }
       if (onReveal) onReveal();
       onComplete();
       return;
@@ -57,6 +62,11 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
     const completeTimeout = setTimeout(() => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage?.setItem("eternity_intro_seen", "true");
+        } catch {}
+      }
       onComplete();
       // Dispatch scroll & resize events so native lazy loading triggers immediately without waiting for user action
       if (typeof window !== "undefined") {

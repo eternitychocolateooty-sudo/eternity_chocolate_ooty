@@ -105,7 +105,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "dns-prefetch", href: "https://supabase.co" },
+      { rel: "preconnect", href: "https://laogqehacxfntoldwhln.supabase.co", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://laogqehacxfntoldwhln.supabase.co" },
       {
         rel: "preload",
         as: "style",
@@ -139,8 +140,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [showLoader, setShowLoader] = useState(true);
-  const [revealContent, setRevealContent] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const isHome = window.location.pathname === "/" || window.location.pathname === "";
+    const hasSeenIntro = window.sessionStorage?.getItem("eternity_intro_seen") === "true";
+    return isHome && !hasSeenIntro;
+  });
+  const [revealContent, setRevealContent] = useState(() => !showLoader);
 
   return (
     <QueryClientProvider client={queryClient}>

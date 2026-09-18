@@ -262,7 +262,7 @@ export default {
         const nonce = btoa(String.fromCharCode(...bytes)).replace(/[^a-zA-Z0-9]/g, "");
 
         const originalBody = await response.text();
-        const modifiedBody = originalBody.replace(/<script\b/g, `<script nonce="${nonce}"`);
+        const modifiedBody = originalBody.replace(/<script\b(?![^>]*type\s*=\s*["']application\/(ld\+)?json["'])/gi, `<script nonce="${nonce}"`);
 
         const csp = [
           "default-src 'self'",
@@ -277,8 +277,6 @@ export default {
           "base-uri 'self'",
           "upgrade-insecure-requests"
         ].join("; ");
-
-        newHeaders.set("Content-Security-Policy", csp);
 
         newHeaders.set("Content-Security-Policy", csp);
 

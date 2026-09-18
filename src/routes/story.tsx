@@ -82,7 +82,7 @@ function Story() {
                     "Roasted Nilgiri Coffee"
                   ],
                   "sameAs": [
-                    "https://www.instagram.com/eternitychocolateooty/"
+                    "https://www.instagram.com/_eternity_chocolates_/"
                   ]
                 }
               }

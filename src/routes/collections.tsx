@@ -1,11 +1,34 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/CartContext";
 import { categories, formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/collections")({
+  loader: async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("popularity", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return {
+          initialProducts: data.map((p: any) => ({
+            ...p,
+            sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
+            price: Number(p.price),
+            rating: Number(p.rating),
+          })),
+        };
+      }
+    } catch (e) {
+      console.error("Collections loader fetch failed:", e);
+    }
+    return { initialProducts: [] };
+  },
   head: () => ({
     meta: [
       { title: "Shop Handcrafted Chocolates & Sweets — ETERNITY Ooty" },
@@ -40,9 +63,19 @@ function getProductPrice(product: any) {
 }
 
 function Collections() {
+  const loaderData = Route.useLoaderData();
   const cart = useCart();
-  const products = cart.products;
-  const isLoading = cart.isLoadingProducts;
+  const products = (cart.products && cart.products.length > 0)
+    ? cart.products
+    : (loaderData?.initialProducts || []);
+  const isLoading = cart.isLoadingProducts && products.length === 0;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("scroll"));
+      window.dispatchEvent(new Event("resize"));
+    }
+  }, []);
   const [active, setActive] = useState<(typeof categories)[number]>("All");
   const [query, setQuery] = useState("");
   const [price, setPrice] = useState(6000);
@@ -204,9 +237,13 @@ function Collections() {
                     <img
                       src={resolveProductImage(product.images?.[0])}
                       alt={product.name}
-                      loading={idx < 6 ? "eager" : "lazy"}
-                      fetchPriority={idx < 3 ? "high" : "auto"}
+                      loading={idx < 8 ? "eager" : "lazy"}
+                      fetchPriority={idx < 4 ? "high" : "auto"}
                       decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = resolveProductImage("");
+                      }}
                       className="h-full w-full object-cover transition-transform duration-[1200ms] group-hover:scale-110"
                     />
                     <span className="absolute left-4 top-4 glass rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">

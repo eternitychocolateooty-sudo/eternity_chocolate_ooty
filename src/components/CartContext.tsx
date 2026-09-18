@@ -63,6 +63,17 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const cartStorageKey = "cocoa-cloud-cart";
+const productsStorageKey = "eternity_products_cache";
+
+function getCachedProducts(): Product[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(productsStorageKey);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user, loading: loadingAuth } = useAuth();
@@ -70,7 +81,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
-  // Fetch live products from database using React Query
+  // Fetch live products from database using React Query with local persistence
   const { data: dbProducts = [], isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
@@ -79,13 +90,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select("*")
         .order("popularity", { ascending: false });
       if (error) throw error;
-      return (data || []).map((p: any) => ({
+      const formatted = (data || []).map((p: any) => ({
         ...p,
         sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
         price: Number(p.price),
         rating: Number(p.rating),
       })) as Product[];
+      if (typeof window !== "undefined" && formatted.length > 0) {
+        try {
+          window.localStorage.setItem(productsStorageKey, JSON.stringify(formatted));
+        } catch {
+          // Ignore local storage quota limits
+        }
+      }
+      return formatted;
     },
+    initialData: getCachedProducts,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   // Handle Cart loading and User-Session Sync

@@ -25,9 +25,33 @@ import hotChoc2 from "@/assets/hot-chocolate-2.webp";
 import galleryImg1 from "@/assets/gallery-1.webp";
 import { useCart } from "@/components/CartContext";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("popularity", { ascending: false })
+        .limit(8);
+
+      if (!error && data && data.length > 0) {
+        return {
+          featuredProducts: data.map((p: any) => ({
+            ...p,
+            sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
+            price: Number(p.price),
+            rating: Number(p.rating),
+          })),
+        };
+      }
+    } catch (e) {
+      console.error("Home loader fetch error:", e);
+    }
+    return { featuredProducts: [] };
+  },
   head: () => ({
     meta: [
       { title: "Best Ooty Chocolate Shop | Eternity Chocolate Ooty — Buy Online" },
@@ -51,9 +75,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const loaderData = Route.useLoaderData();
   const cart = useCart();
-  const products = cart.products;
-  const isLoading = cart.isLoadingProducts;
+  const products = (cart.products && cart.products.length > 0)
+    ? cart.products
+    : (loaderData?.featuredProducts || []);
+  const isLoading = cart.isLoadingProducts && products.length === 0;
 
   return (
     <div>
@@ -496,8 +523,15 @@ function Home() {
       {/* SOCIAL */}
       <section className="py-24">
         <div className="container mx-auto px-6 text-center">
-          <Instagram className="h-7 w-7 text-accent mx-auto mb-4" />
-          <h2 className="font-display text-3xl md:text-4xl">@eternity</h2>
+          <a
+            href="https://www.instagram.com/_eternity_chocolates_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-block group hover:text-accent transition-colors"
+          >
+            <Instagram className="h-7 w-7 text-accent mx-auto mb-4 transition-transform group-hover:scale-110" />
+            <h2 className="font-display text-3xl md:text-4xl">@_eternity_chocolates_</h2>
+          </a>
           <p className="text-muted-foreground mt-2">Follow the chocolate-making moments</p>
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
             {[

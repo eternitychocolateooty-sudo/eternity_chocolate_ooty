@@ -107,7 +107,7 @@ function Visit() {
                   "closes": "22:30"
                 },
                 "sameAs": [
-                  "https://www.instagram.com/eternitychocolateooty/"
+                  "https://www.instagram.com/_eternity_chocolates_/"
                 ]
               }
             ]
