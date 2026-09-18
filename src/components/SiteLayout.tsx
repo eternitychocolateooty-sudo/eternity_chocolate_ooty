@@ -152,15 +152,31 @@ function FloatingNav() {
 
 function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const cart = useCart();
-  const cartProducts = cart.items
-    .map((item) => ({
+  const cartProducts = cart.items.map((item) => {
+    const product = cart.products.find((p) => p.id === item.productId);
+    return {
       item,
-      product: cart.products.find((p) => p.id === item.productId),
-    }))
-    .filter(
-      (entry): entry is { item: (typeof cart.items)[number]; product: (typeof cart.products)[number] } =>
-        Boolean(entry.product),
-    );
+      product: product || {
+        id: item.productId,
+        name: item.name || "Handcrafted Chocolate",
+        images: [item.image || ""],
+        price: item.price || 0,
+        sale_price: undefined,
+        weight: item.weight || "",
+        variants: [],
+        stock_quantity: 99,
+        category: "",
+        description: "",
+        featured: false,
+        ingredients: [],
+        popularity: 0,
+        rating: 5,
+        reviews: 0,
+        slug: "",
+        status: "available" as const,
+      },
+    };
+  });
 
   if (!open) return null;
 
@@ -276,7 +292,7 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{cart.shipping === 0 ? "Free" : formatMoney(cart.shipping)}</span>
+                  <span>{cart.shipping === 0 ? (cart.subtotal >= 3000 ? "Free" : formatMoney(0)) : formatMoney(cart.shipping)}</span>
                 </div>
               </div>
               <div className="divider-gold my-4" />

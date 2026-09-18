@@ -19,6 +19,25 @@ export const Route = createFileRoute("/checkout")({
       error: search.error as string | undefined,
     };
   },
+  loader: async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("popularity", { ascending: false });
+      if (!error && data) {
+        return (data || []).map((p: any) => ({
+          ...p,
+          sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
+          price: Number(p.price),
+          rating: Number(p.rating),
+        }));
+      }
+    } catch {
+      // Ignore fallback
+    }
+    return [];
+  },
   head: () => ({
     meta: [
       { title: "Checkout — ETERNITY" },
@@ -127,6 +146,7 @@ function loadScript(src: string): Promise<boolean> {
 }
 
 function Checkout() {
+  const loadedProducts = Route.useLoaderData() || [];
   const cart = useCart();
   const { user, profile } = useAuth();
   const { order_id: queryOrderId, error: queryError } = Route.useSearch();
@@ -258,6 +278,12 @@ function Checkout() {
     }
     if (!pincodeRegex.test(pincode.trim())) {
       alert("Please provide a valid 6-digit postal pincode.");
+      setIsProcessing(false);
+      return;
+    }
+
+    if (cart.items.length === 0) {
+      alert("Your hamper is empty. Please add chocolates to your hamper before placing an order.");
       setIsProcessing(false);
       return;
     }
@@ -480,10 +506,14 @@ function Checkout() {
             <div className="flex flex-col gap-4 pt-4 sm:flex-row">
               <button
                 type="submit"
-                disabled={isProcessing}
-                className="flex-1 rounded-full bg-primary px-8 py-4 text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50"
+                disabled={isProcessing || cart.items.length === 0}
+                className="flex-1 rounded-full bg-primary px-8 py-4 text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
-                {isProcessing ? "Processing..." : `Place order · ${formatMoney(cart.total)}`}
+                {isProcessing
+                  ? "Processing..."
+                  : cart.items.length === 0
+                  ? "Hamper is empty"
+                  : `Place order · ${formatMoney(cart.total)}`}
               </button>
               <Link
                 to="/collections"
@@ -499,47 +529,79 @@ function Checkout() {
         <aside className="self-start rounded-3xl bg-card p-6 shadow-luxe lg:sticky lg:top-28">
           <h2 className="mb-6 font-display text-2xl">Your hamper</h2>
           <div className="mb-6 space-y-4">
-            {cart.items.map((item) => {
-              const product = cart.products.find((p) => p.id === item.productId);
-              if (!product) return null;
-              
-              const itemPrice = (() => {
-                let base = product.sale_price !== undefined ? product.sale_price : product.price;
-                if (item.selectedVariant) {
-                  const matchingVariantStr = product.variants?.find(
-                    (v) => parseVariant(v, base).name === item.selectedVariant
-                  );
-                  if (matchingVariantStr) {
-                    base = parseVariant(matchingVariantStr, base).price;
-                  }
-                }
-                return base;
-              })();
+            {cart.items.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-center">
+                <p className="font-display text-lg">Your hamper is empty</p>
+                <p className="mt-1 text-xs text-muted-foreground">Add handcrafted chocolates before checkout.</p>
+                <Link
+                  to="/collections"
+                  className="mt-4 inline-block rounded-full bg-primary px-5 py-2 text-xs font-medium text-primary-foreground shadow-soft"
+                >
+                  Browse collections
+                </Link>
+              </div>
+            ) : (
+              cart.items.map((item) => {
+                const product = (cart.products.length > 0 ? cart.products : loadedProducts).find(
+                  (p: any) => p.id === item.productId
+                );
 
-              return (
-                <div key={`${product.id}-${item.selectedVariant || ""}`} className="flex gap-4">
-                  <img
-                    src={resolveProductImage(product.images[0])}
-                    alt={product.name}
-                    className="h-16 w-16 rounded-xl object-cover"
-                  />
-                  <div className="flex-1">
-                    <p className="font-display">{product.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Qty {item.quantity} · {item.selectedVariant ? `Variant: ${item.selectedVariant}` : product.weight}
+                const itemPrice = (() => {
+                  if (product) {
+                    let base = product.sale_price !== undefined ? product.sale_price : product.price;
+                    if (item.selectedVariant) {
+                      const matchingVariantStr = product.variants?.find(
+                        (v: string) => parseVariant(v, base).name === item.selectedVariant
+                      );
+                      if (matchingVariantStr) {
+                        base = parseVariant(matchingVariantStr, base).price;
+                      }
+                    }
+                    return base;
+                  }
+                  return item.price ?? 0;
+                })();
+
+                const itemName = product?.name || item.name || "Handcrafted Chocolate";
+                const itemImage = product?.images?.[0] || item.image || "";
+                const itemWeight = item.selectedVariant
+                  ? `Variant: ${item.selectedVariant}`
+                  : (product?.weight || item.weight || "");
+
+                return (
+                  <div key={`${item.productId}-${item.selectedVariant || ""}`} className="flex gap-4">
+                    {itemImage ? (
+                      <img
+                        src={resolveProductImage(itemImage)}
+                        alt={itemName}
+                        className="h-16 w-16 rounded-xl object-cover bg-card shadow-soft"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-xl bg-card border border-border grid place-items-center text-[10px] font-display text-muted-foreground">
+                        ETERNITY
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="font-display">{itemName}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Qty {item.quantity}{itemWeight ? ` · ${itemWeight}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-sm font-medium">
+                      {formatMoney(itemPrice * item.quantity)}
                     </p>
                   </div>
-                  <p className="text-sm font-medium">
-                    {formatMoney(itemPrice * item.quantity)}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
           <div className="divider-gold my-5" />
           <div className="mb-5 space-y-3">
             <Row label="Subtotal" value={formatMoney(cart.subtotal)} />
-            <Row label="Shipping" value={cart.shipping === 0 ? "Free" : formatMoney(cart.shipping)} />
+            <Row
+              label="Shipping"
+              value={cart.shipping === 0 ? (cart.subtotal >= 3000 ? "Free" : formatMoney(0)) : formatMoney(cart.shipping)}
+            />
           </div>
           <div className="divider-gold my-5" />
           <Row label="Total" value={formatMoney(cart.total)} bold />

@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -42,6 +42,10 @@ export type CartItem = {
   productId: string;
   quantity: number;
   selectedVariant?: string;
+  price?: number;
+  name?: string;
+  image?: string;
+  weight?: string;
 };
 
 type CartContextValue = {
@@ -75,9 +79,20 @@ function getCachedProducts(): Product[] {
   }
 }
 
+function getInitialCartItems(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(cartStorageKey);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const { user, loading: loadingAuth } = useAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(getInitialCartItems);
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
@@ -215,23 +230,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = async (product: Product, quantity = 1, selectedVariant?: string) => {
     if (product.status === "sold-out") return;
 
+    let itemPrice = product.sale_price !== undefined ? product.sale_price : product.price;
+    if (selectedVariant && product.variants) {
+      const matchingVariant = product.variants.find(
+        (v) => parseVariant(v, itemPrice).name === selectedVariant
+      );
+      if (matchingVariant) {
+        itemPrice = parseVariant(matchingVariant, itemPrice).price;
+      }
+    }
+
     const currentItem = items.find(
       (item) => item.productId === product.id && item.selectedVariant === selectedVariant
     );
     const currentQty = currentItem ? currentItem.quantity : 0;
-    const nextQty = Math.min(currentQty + quantity, product.stock_quantity);
+    const maxStock = product.stock_quantity !== undefined ? product.stock_quantity : 99;
+    const nextQty = Math.min(currentQty + quantity, maxStock);
 
     if (nextQty <= 0) return;
+
+    const newItem: CartItem = {
+      productId: product.id,
+      quantity: nextQty,
+      selectedVariant,
+      price: itemPrice,
+      name: product.name,
+      image: product.images?.[0] || "",
+      weight: product.weight || "",
+    };
 
     const updatedItems = currentItem
       ? items.map((item) =>
           item.productId === product.id && item.selectedVariant === selectedVariant
-            ? { ...item, quantity: nextQty }
+            ? {
+                ...item,
+                quantity: nextQty,
+                price: itemPrice,
+                name: product.name,
+                image: product.images?.[0] || item.image || "",
+                weight: product.weight || item.weight || "",
+              }
             : item
         )
-      : [...items, { productId: product.id, quantity: nextQty, selectedVariant }];
+      : [...items, newItem];
 
     setItems(updatedItems);
+
+    queryClient.setQueryData<Product[]>(["products"], (old) => {
+      const list = old || [];
+      if (list.some((p) => p.id === product.id)) return list;
+      return [...list, product];
+    });
+
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(cartStorageKey, JSON.stringify(updatedItems));
+        const cached = getCachedProducts();
+        if (!cached.find((p) => p.id === product.id)) {
+          window.localStorage.setItem(productsStorageKey, JSON.stringify([...cached, product]));
+        }
+      } catch (err) {
+        console.warn("Could not save to localStorage:", err);
+      }
+    }
 
     if (user) {
       try {
@@ -324,14 +385,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => {
       const product = dbProducts.find((p) => p.id === item.productId);
-      if (!product) return sum;
-      let price = product.sale_price !== undefined ? product.sale_price : product.price;
-      if (item.selectedVariant) {
-        const matchingVariantStr = product.variants?.find(
-          (v) => parseVariant(v, price).name === item.selectedVariant
-        );
-        if (matchingVariantStr) {
-          price = parseVariant(matchingVariantStr, price).price;
+      let price = item.price ?? 0;
+      if (product) {
+        price = product.sale_price !== undefined ? product.sale_price : product.price;
+        if (item.selectedVariant) {
+          const matchingVariantStr = product.variants?.find(
+            (v) => parseVariant(v, price).name === item.selectedVariant
+          );
+          if (matchingVariantStr) {
+            price = parseVariant(matchingVariantStr, price).price;
+          }
         }
       }
       return sum + price * item.quantity;
@@ -341,9 +404,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const totalWeightKg = useMemo(() => {
     const totalGrams = items.reduce((sum, item) => {
       const product = dbProducts.find((p) => p.id === item.productId);
-      if (!product) return sum;
-
-      let itemWeightStr = product.weight;
+      let itemWeightStr = product?.weight || item.weight || "100g";
       if (item.selectedVariant) {
         const weightGrams = parseWeightToGrams(item.selectedVariant);
         if (weightGrams > 0) {

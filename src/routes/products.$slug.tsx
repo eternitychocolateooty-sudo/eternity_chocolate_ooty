@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCart, parseVariant } from "@/components/CartContext";
@@ -79,8 +79,25 @@ export const Route = createFileRoute("/products/$slug")({
 function ProductDetails() {
   const { product } = Route.useLoaderData();
   const cart = useCart();
+  const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
+  const [isBuying, setIsBuying] = useState(false);
+
+  const handleBuyNow = async () => {
+    if (isBuying || product.status === "sold-out") return;
+    try {
+      setIsBuying(true);
+      await cart.addItem(product, quantity, selectedVariant?.name);
+      await navigate({ to: "/checkout" });
+    } catch (err) {
+      console.error("Failed to process Buy Now:", err);
+      navigate({ to: "/checkout" });
+    } finally {
+      setIsBuying(false);
+    }
+  };
+
   const related = useMemo(() => {
     if (!cart.products.length) return [];
     return cart.products
@@ -364,13 +381,14 @@ function ProductDetails() {
 
               </div>
 
-              <Link
-                to="/checkout"
-                onClick={() => cart.addItem(product, quantity, selectedVariant?.name)}
-                className="mt-4 inline-flex w-full justify-center rounded-full bg-gradient-gold px-6 py-3 font-medium text-[oklch(0.22_0.035_50)] shadow-gold"
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={product.status === "sold-out" || isBuying}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-gradient-gold px-6 py-3 font-medium text-[oklch(0.22_0.035_50)] shadow-gold disabled:opacity-50 transition-opacity hover:opacity-90 cursor-pointer"
               >
-                Buy now
-              </Link>
+                {isBuying ? "Proceeding to checkout..." : "Buy now"}
+              </button>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
