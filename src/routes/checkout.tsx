@@ -475,10 +475,10 @@ function Checkout() {
           {paymentNotice && (
             <aside
               aria-live="polite"
-              className={`relative mb-8 overflow-hidden rounded-2xl border p-6 sm:p-7 shadow-[0_4px_24px_-4px_rgba(44,24,16,0.07)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
+              className={`relative mb-8 overflow-hidden rounded-2xl border p-6 sm:p-7 shadow-soft transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
                 paymentNotice.type === "warning"
-                  ? "bg-[#FDFBF7] dark:bg-[#1A1412] border-[#EADBCE] dark:border-[#382820]"
-                  : "bg-[#FDF6F6] dark:bg-[#1D1214] border-[#F3CECE] dark:border-[#422026]"
+                  ? "bg-card border-border/80 hover:border-accent/40"
+                  : "bg-card border-destructive/40"
               }`}
             >
               <div className="flex items-start gap-4 sm:gap-5">
@@ -486,8 +486,8 @@ function Checkout() {
                 <div
                   className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-2xl flex items-center justify-center border shadow-xs ${
                     paymentNotice.type === "warning"
-                      ? "bg-[#F5ECE1] dark:bg-[#2B1F19] border-[#E3D3C1] dark:border-[#423026] text-[#783F1D] dark:text-[#E8AF82]"
-                      : "bg-[#FAE2E2] dark:bg-[#31171B] border-[#F3BFBF] dark:border-[#52242B] text-[#991B1B] dark:text-[#F87171]"
+                      ? "bg-secondary/60 border-border text-accent"
+                      : "bg-destructive/10 border-destructive/30 text-destructive"
                   }`}
                 >
                   {paymentNotice.type === "warning" ? (
@@ -503,22 +503,16 @@ function Checkout() {
                     {paymentNotice.title}
                   </h2>
 
-                  <p
-                    className={`mt-2 text-sm sm:text-[15px] leading-relaxed max-w-[62ch] ${
-                      paymentNotice.type === "warning"
-                        ? "text-[#61493C] dark:text-[#D5C2B4]"
-                        : "text-[#6A3236] dark:text-[#DEB2B5]"
-                    }`}
-                  >
+                  <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-muted-foreground max-w-[62ch]">
                     {paymentNotice.message}
                   </p>
 
                   {/* Reassurance Micro-signal */}
                   <div
-                    className={`mt-3.5 inline-flex items-center gap-1.5 text-xs font-medium ${
+                    className={`mt-3.5 inline-flex items-center gap-2 text-xs font-medium ${
                       paymentNotice.type === "warning"
-                        ? "text-[#783F1D] dark:text-[#DEAC88]"
-                        : "text-[#8C3439] dark:text-[#F0999C]"
+                        ? "text-accent"
+                        : "text-destructive"
                     }`}
                   >
                     <ShieldCheck className="h-4 w-4 shrink-0 stroke-[2]" />
@@ -526,14 +520,14 @@ function Checkout() {
                   </div>
 
                   {/* Micro Actions */}
-                  <div className="mt-5 flex flex-wrap items-center gap-3 pt-4 border-t border-border/50">
+                  <div className="mt-5 flex flex-wrap items-center gap-3 pt-4 border-t border-border/60">
                     <button
                       type="button"
                       onClick={() => {
                         const submitBtn = document.querySelector('button[type="submit"]');
                         submitBtn?.scrollIntoView({ behavior: "smooth", block: "center" });
                       }}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground shadow-soft transition-all hover:opacity-95 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 hover:shadow-md active:scale-[0.98] cursor-pointer"
                     >
                       <span>Complete order</span>
                       <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
@@ -541,7 +535,7 @@ function Checkout() {
 
                     <Link
                       to="/collections"
-                      className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/75 hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Explore other delicacies
                     </Link>
@@ -552,7 +546,7 @@ function Checkout() {
                 <button
                   type="button"
                   onClick={() => setPaymentNotice(null)}
-                  className="shrink-0 -mr-1.5 -mt-1.5 p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  className="shrink-0 -mr-1.5 -mt-1.5 p-2 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
                   aria-label="Dismiss message"
                 >
                   <X className="h-4 w-4 stroke-[1.8]" />
