@@ -6,6 +6,7 @@ import { formatMoney } from "@/data/shop";
 import { resolveProductImage } from "@/lib/utils";
 import { createCheckoutOrder, verifyCheckoutPayment, testResendEmail } from "@/lib/server-functions";
 import { supabase } from "@/lib/supabase";
+import { AlertCircle, ArrowRight, RotateCcw, ShieldCheck, X } from "lucide-react";
 
 interface CheckoutSearch {
   order_id?: string;
@@ -472,31 +473,92 @@ function Checkout() {
           <h1 className="mb-8 font-display text-4xl">Checkout</h1>
 
           {paymentNotice && (
-            <div
-              className={`mb-8 flex items-start justify-between gap-4 rounded-2xl p-5 border shadow-sm transition-all duration-300 animate-in fade-in ${
+            <aside
+              aria-live="polite"
+              className={`relative mb-8 overflow-hidden rounded-2xl border p-6 sm:p-7 shadow-[0_4px_24px_-4px_rgba(44,24,16,0.07)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
                 paymentNotice.type === "warning"
-                  ? "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
-                  : "bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-200"
+                  ? "bg-[#FDFBF7] dark:bg-[#1A1412] border-[#EADBCE] dark:border-[#382820]"
+                  : "bg-[#FDF6F6] dark:bg-[#1D1214] border-[#F3CECE] dark:border-[#422026]"
               }`}
             >
-              <div className="flex gap-3.5">
-                <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-                  {paymentNotice.type === "warning" ? "🍫" : "⚠️"}
-                </span>
-                <div className="space-y-1">
-                  <p className="font-semibold text-base font-serif">{paymentNotice.title}</p>
-                  <p className="text-sm opacity-90 leading-relaxed">{paymentNotice.message}</p>
+              <div className="flex items-start gap-4 sm:gap-5">
+                {/* Visual Icon Badge */}
+                <div
+                  className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-2xl flex items-center justify-center border shadow-xs ${
+                    paymentNotice.type === "warning"
+                      ? "bg-[#F5ECE1] dark:bg-[#2B1F19] border-[#E3D3C1] dark:border-[#423026] text-[#783F1D] dark:text-[#E8AF82]"
+                      : "bg-[#FAE2E2] dark:bg-[#31171B] border-[#F3BFBF] dark:border-[#52242B] text-[#991B1B] dark:text-[#F87171]"
+                  }`}
+                >
+                  {paymentNotice.type === "warning" ? (
+                    <RotateCcw className="h-5 w-5 stroke-[1.8]" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 stroke-[1.8]" />
+                  )}
                 </div>
+
+                {/* Editorial Content */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+                    {paymentNotice.title}
+                  </h2>
+
+                  <p
+                    className={`mt-2 text-sm sm:text-[15px] leading-relaxed max-w-[62ch] ${
+                      paymentNotice.type === "warning"
+                        ? "text-[#61493C] dark:text-[#D5C2B4]"
+                        : "text-[#6A3236] dark:text-[#DEB2B5]"
+                    }`}
+                  >
+                    {paymentNotice.message}
+                  </p>
+
+                  {/* Reassurance Micro-signal */}
+                  <div
+                    className={`mt-3.5 inline-flex items-center gap-1.5 text-xs font-medium ${
+                      paymentNotice.type === "warning"
+                        ? "text-[#783F1D] dark:text-[#DEAC88]"
+                        : "text-[#8C3439] dark:text-[#F0999C]"
+                    }`}
+                  >
+                    <ShieldCheck className="h-4 w-4 shrink-0 stroke-[2]" />
+                    <span>Hamper items preserved · No amount debited</span>
+                  </div>
+
+                  {/* Micro Actions */}
+                  <div className="mt-5 flex flex-wrap items-center gap-3 pt-4 border-t border-border/50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const submitBtn = document.querySelector('button[type="submit"]');
+                        submitBtn?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground shadow-soft transition-all hover:opacity-95 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                    >
+                      <span>Complete order</span>
+                      <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
+                    </button>
+
+                    <Link
+                      to="/collections"
+                      className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/75 hover:text-foreground transition-colors"
+                    >
+                      Explore other delicacies
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Dismiss Control */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentNotice(null)}
+                  className="shrink-0 -mr-1.5 -mt-1.5 p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  aria-label="Dismiss message"
+                >
+                  <X className="h-4 w-4 stroke-[1.8]" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setPaymentNotice(null)}
-                className="shrink-0 rounded-full p-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer text-lg leading-none"
-                aria-label="Dismiss notification"
-              >
-                ✕
-              </button>
-            </div>
+            </aside>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-10">
