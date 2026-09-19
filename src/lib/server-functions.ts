@@ -91,16 +91,14 @@ function calculateShippingFee(subtotal: number, state: string, totalWeightKg: nu
   const isTamilNadu = cleanState === "tamilnadu";
 
   if (isTamilNadu) {
-    if (totalWeightKg <= 0.1) return 70;
-    if (totalWeightKg <= 0.5) return 100;
+    if (totalWeightKg <= 0.5) return 70;
     if (totalWeightKg <= 1.0) return 130;
     if (totalWeightKg <= 2.0) return 180;
     if (totalWeightKg <= 5.0) return 290;
     const extraKg = Math.ceil(totalWeightKg - 5);
     return 290 + (extraKg * 40);
   } else {
-    if (totalWeightKg <= 0.1) return 110;
-    if (totalWeightKg <= 0.5) return 150;
+    if (totalWeightKg <= 0.5) return 70;
     if (totalWeightKg <= 1.0) return 185;
     if (totalWeightKg <= 2.0) return 250;
     if (totalWeightKg <= 5.0) return 400;
