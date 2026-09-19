@@ -300,33 +300,8 @@ create policy "Allow admins to manage feedback"
   using (public.is_admin(auth.uid()));
 
 -- =========================================================================
--- 5. SEED DATA FOR PRODUCTS
+-- 5. PRODUCTS (Managed live in Supabase via Admin dashboard)
 -- =========================================================================
-
-insert into public.products (id, name, slug, description, category, price, sale_price, stock_quantity, featured, images, ingredients, weight, rating, reviews, popularity, status, variants) values
-('cc-dark-70', 'Single-Origin 70%', 'single-origin-70', 'Slow-roasted Idukki cocoa with a clean snap, deep fruit notes, and a long finish.', 'Chocolate', 420, null, 24, true, array['dark.jpg', 'nuts.jpg', 'gift.jpg'], array['Cocoa mass', 'Cocoa butter', 'Raw cane sugar', 'Cocoa nibs'], '100 g', 4.9, 86, 98, 'available', array['70% bar', '75% sea salt', 'Nib bark']),
-('cc-milk-velvet', 'Velvet Milk', 'velvet-milk', 'Creamy Nilgiri milk chocolate with caramel warmth and a soft, silken melt.', 'Chocolate', 360, 320, 18, true, array['milk.jpg', 'homemade.jpg', 'gift.jpg'], array['Cocoa butter', 'Milk powder', 'Cocoa mass', 'Cane sugar'], '100 g', 4.8, 64, 91, 'available', array['Classic', 'Caramel', 'Hot chocolate cube']),
-('cc-almond-honey', 'Almond & Honey', 'almond-honey', 'Roasted almonds folded through chocolate and finished with golden hill honey.', 'Chocolate', 480, null, 9, true, array['nuts.jpg', 'dark.jpg', 'seasonal.jpg'], array['Almonds', 'Cocoa mass', 'Honey', 'Cocoa butter', 'Cane sugar'], '120 g', 4.9, 73, 96, 'low-stock', array['Almond slab', 'Hazelnut praline', 'Cashew brittle']),
-('cc-walnut-fudge', 'Walnut Fudge', 'walnut-fudge', 'Old-recipe homemade fudge, lightly salted and wrapped fresh every morning.', 'Chocolate', 300, null, 30, false, array['homemade.jpg', 'milk.jpg', 'nuts.jpg'], array['Milk', 'Cocoa', 'Walnuts', 'Butter', 'Cane sugar'], '150 g', 4.7, 41, 76, 'available', array['Walnut', 'Coconut bark', 'Classic fudge']),
-('cc-petite-box', 'Petite Gift Box', 'petite-gift-box', 'Twelve hand-finished chocolates in a gold-tied gift box for Ooty travellers.', 'Chocolate', 950, null, 14, true, array['gift.jpg', 'dark.jpg', 'seasonal.jpg'], array['Assorted dark, milk, nut, and seasonal chocolates'], '12 pieces', 5, 58, 94, 'available', array['12 pieces', '24 pieces', 'Custom note']),
-('cc-winter-spice', 'Winter Spice', 'winter-spice', 'Cinnamon-orange dark chocolate made for misty evenings and festival gifting.', 'Chocolate', 520, null, 0, false, array['seasonal.jpg', 'gift.jpg', 'dark.jpg'], array['Cocoa mass', 'Orange peel', 'Cinnamon', 'Cocoa butter'], '100 g', 4.8, 29, 82, 'sold-out', array['Winter spice', 'Monsoon coffee'])
-on conflict (id) do update set
-  name = excluded.name,
-  slug = excluded.slug,
-  description = excluded.description,
-  category = excluded.category,
-  price = excluded.price,
-  sale_price = excluded.sale_price,
-  stock_quantity = excluded.stock_quantity,
-  featured = excluded.featured,
-  images = excluded.images,
-  ingredients = excluded.ingredients,
-  weight = excluded.weight,
-  rating = excluded.rating,
-  reviews = excluded.reviews,
-  popularity = excluded.popularity,
-  status = excluded.status,
-  variants = excluded.variants;
 
 -- =========================================================================
 -- 6. STORAGE BUCKET SETUP

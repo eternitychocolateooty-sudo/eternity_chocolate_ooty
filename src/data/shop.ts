@@ -1,10 +1,3 @@
-import dark from "@/assets/dark.webp";
-import gift from "@/assets/gift.webp";
-import homemade from "@/assets/homemade.webp";
-import milk from "@/assets/milk.webp";
-import nuts from "@/assets/nuts.webp";
-import seasonal from "@/assets/seasonal.webp";
-
 export type ProductCategory = "Chocolate" | "Spices" | "Tea" | "Coffee";
 
 export type Product = {
