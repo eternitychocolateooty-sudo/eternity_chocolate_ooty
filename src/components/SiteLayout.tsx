@@ -41,7 +41,7 @@ function useDarkMode() {
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
-  return { dark: true, toggle: () => {} };
+  return { dark: true, toggle: () => { } };
 }
 
 function FloatingNav() {
@@ -54,15 +54,13 @@ function FloatingNav() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? "py-3" : "py-5"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-3" : "py-5"
+        }`}
     >
       <div className="container mx-auto px-4">
         <nav
-          className={`mx-auto flex items-center justify-between rounded-full px-5 md:px-7 py-3 transition-all duration-500 ${
-            scrolled ? "glass shadow-soft max-w-5xl" : "max-w-6xl"
-          }`}
+          className={`mx-auto flex items-center justify-between rounded-full px-5 md:px-7 py-3 transition-all duration-500 ${scrolled ? "glass shadow-soft max-w-5xl" : "max-w-6xl"
+            }`}
         >
           <Link to="/" className="flex items-center gap-2 group">
             <img src={logoImg} alt="ETERNITY Logo" className="h-9 w-auto object-contain theme-logo" />
@@ -78,15 +76,13 @@ function FloatingNav() {
                 <li key={i.to}>
                   <Link
                     to={i.to}
-                    className={`relative text-sm tracking-wide transition-colors ${
-                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`relative text-sm tracking-wide transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     {i.label}
                     <span
-                      className={`absolute -bottom-1 left-0 h-px bg-gradient-gold transition-all duration-500 ${
-                        active ? "w-full" : "w-0"
-                      }`}
+                      className={`absolute -bottom-1 left-0 h-px bg-gradient-gold transition-all duration-500 ${active ? "w-full" : "w-0"
+                        }`}
                     />
                   </Link>
                 </li>
@@ -417,7 +413,7 @@ function Footer() {
               rel="noreferrer noopener"
               className="hover:text-accent transition-colors"
             >
-              ISOFORM. All rights reserved.
+              Built by ISOFORM.
             </a>
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
@@ -457,11 +453,10 @@ export function ScrollToTopButton() {
       type="button"
       onClick={scrollToTop}
       aria-label="Scroll back to top"
-      className={`fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full glass border border-border/80 text-foreground shadow-luxe backdrop-blur-md transition-all duration-300 hover:border-accent hover:text-accent hover:-translate-y-1 active:scale-95 cursor-pointer ${
-        visible
+      className={`fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full glass border border-border/80 text-foreground shadow-luxe backdrop-blur-md transition-all duration-300 hover:border-accent hover:text-accent hover:-translate-y-1 active:scale-95 cursor-pointer ${visible
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-4 pointer-events-none"
-      }`}
+        }`}
     >
       <ChevronUp className="h-5 w-5 stroke-[2.2]" />
     </button>
