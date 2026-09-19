@@ -7,6 +7,7 @@ import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/collections")({
+  staleTime: 0,
   loader: async () => {
     try {
       const { data, error } = await supabase
@@ -71,6 +72,7 @@ function Collections() {
   const isLoading = cart.isLoadingProducts && products.length === 0;
 
   useEffect(() => {
+    cart.refetchProducts();
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("resize"));

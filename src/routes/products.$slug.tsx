@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, notFound, redirect } from "@tanstack/react-router";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCart, parseVariant } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
@@ -17,6 +18,7 @@ const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/products/$slug")({
+  staleTime: 0,
   loader: async ({ params }) => {
     // Check if this is an old AI dummy product URL previously indexed by search engines
     const redirectUrl = LEGACY_AI_SLUG_REDIRECTS[params.slug];
@@ -85,10 +87,21 @@ export const Route = createFileRoute("/products/$slug")({
 function ProductDetails() {
   const { product } = Route.useLoaderData();
   const cart = useCart();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
   const [isBuying, setIsBuying] = useState(false);
+
+  // Sync loaded product data into global query cache so collections and cart see any changed values immediately
+  useEffect(() => {
+    if (product) {
+      queryClient.setQueryData<any[]>(["products"], (old) => {
+        if (!old || !old.length) return old;
+        return old.map((p) => (p.id === product.id ? { ...p, ...product } : p));
+      });
+    }
+  }, [product, queryClient]);
 
   const handleBuyNow = async () => {
     if (isBuying || product.status === "sold-out") return;

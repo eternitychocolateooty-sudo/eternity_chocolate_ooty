@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState, FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Boxes, IndianRupee, MapPin, PackageCheck, ShoppingBag, User, Users, Star, Loader2, Upload, Trash2, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { formatMoney, categories } from "@/data/shop";
 import { supabase } from "@/lib/supabase";
@@ -95,6 +96,7 @@ const compressImage = (file: File, maxW = 1200, maxH = 1200, quality = 0.82): Pr
 };
 
 function AdminConsole() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"catalog" | "orders">("catalog");
 
   // Data states
@@ -350,6 +352,7 @@ function AdminConsole() {
         if (dbErr) throw dbErr;
         newProd = data;
         setProducts((prev) => prev.map((p) => p.id === editProductId ? newProd : p));
+        queryClient.invalidateQueries({ queryKey: ["products"] });
         alert("Product updated successfully!");
       } else {
         const { data, error: dbErr } = await supabase
@@ -376,6 +379,7 @@ function AdminConsole() {
         if (dbErr) throw dbErr;
         newProd = data;
         setProducts((prev) => [newProd, ...prev]);
+        queryClient.invalidateQueries({ queryKey: ["products"] });
         alert("Product added successfully!");
       }
 
@@ -412,6 +416,7 @@ function AdminConsole() {
       const { error } = await supabase.from("products").delete().eq("id", productId);
       if (error) throw error;
       setProducts((prev) => prev.filter((p) => p.id !== productId));
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       alert("Product deleted successfully.");
     } catch (err: any) {
       alert(`Delete failed: ${err.message}`);

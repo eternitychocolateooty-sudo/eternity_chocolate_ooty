@@ -25,6 +25,7 @@ import { supabase } from "@/lib/supabase";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  staleTime: 0,
   loader: async () => {
     try {
       const { data, error } = await supabase

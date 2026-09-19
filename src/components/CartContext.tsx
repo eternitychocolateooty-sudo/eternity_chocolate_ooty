@@ -61,23 +61,13 @@ type CartContextValue = {
   count: number;
   products: Product[];
   isLoadingProducts: boolean;
+  refetchProducts: () => void;
   shippingState: string;
   setShippingState: (state: string) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 const cartStorageKey = "cocoa-cloud-cart";
-const productsStorageKey = "eternity_products_cache";
-
-function getCachedProducts(): Product[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(productsStorageKey);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
 
 function getInitialCartItems(): CartItem[] {
   if (typeof window === "undefined") return [];
@@ -96,8 +86,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
-  // Fetch live products from database using React Query with local persistence
-  const { data: dbProducts = [], isLoading: isLoadingProducts } = useQuery<Product[]>({
+  // Fetch live products from database using React Query with zero staletime for real-time accuracy
+  const { data: dbProducts = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -105,25 +95,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select("*")
         .order("popularity", { ascending: false });
       if (error) throw error;
-      const formatted = (data || []).map((p: any) => ({
+      return (data || []).map((p: any) => ({
         ...p,
         sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
         price: Number(p.price),
         rating: Number(p.rating),
       })) as Product[];
-      if (typeof window !== "undefined" && formatted.length > 0) {
-        try {
-          window.localStorage.setItem(productsStorageKey, JSON.stringify(formatted));
-        } catch {
-          // Ignore local storage quota limits
-        }
-      }
-      return formatted;
     },
-    initialData: getCachedProducts,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 60 * 24,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
+
+  // Realtime listener for immediate product changes from Supabase + cleanup of stale legacy cache
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem("eternity_products_cache");
+      } catch {
+        // ignore
+      }
+    }
+
+    const channel = supabase
+      .channel("public:products_live_feed")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Handle Cart loading and User-Session Sync
   useEffect(() => {
@@ -278,17 +286,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     queryClient.setQueryData<Product[]>(["products"], (old) => {
       const list = old || [];
-      if (list.some((p) => p.id === product.id)) return list;
+      if (list.some((p) => p.id === product.id)) {
+        return list.map((p) => (p.id === product.id ? { ...p, ...product } : p));
+      }
       return [...list, product];
     });
 
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(cartStorageKey, JSON.stringify(updatedItems));
-        const cached = getCachedProducts();
-        if (!cached.find((p) => p.id === product.id)) {
-          window.localStorage.setItem(productsStorageKey, JSON.stringify([...cached, product]));
-        }
       } catch (err) {
         console.warn("Could not save to localStorage:", err);
       }
@@ -439,6 +445,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         count,
         products: dbProducts,
         isLoadingProducts,
+        refetchProducts,
         shippingState,
         setShippingState,
       }}
