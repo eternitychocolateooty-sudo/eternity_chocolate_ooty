@@ -1,13 +1,32 @@
-import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, notFound, redirect } from "@tanstack/react-router";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCart, parseVariant } from "@/components/CartContext";
-import { findProduct, formatMoney } from "@/data/shop";
+import { formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
+// 301 Redirect map for legacy AI-generated dummy URLs to prevent 404 indexing issues
+const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
+  "single-origin-70": "/products/plain-dark",
+  "velvet-milk": "/products/plain-milk",
+  "almond-honey": "/products/dark-almond-nutties",
+  "walnut-fudge": "/collections",
+  "petite-gift-box": "/collections",
+  "winter-spice": "/collections",
+};
+
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params }) => {
+    // Check if this is an old AI dummy product URL previously indexed by search engines
+    const redirectUrl = LEGACY_AI_SLUG_REDIRECTS[params.slug];
+    if (redirectUrl) {
+      throw redirect({
+        to: redirectUrl,
+        statusCode: 301,
+      });
+    }
+
     let product: any = null;
 
     try {
@@ -26,20 +45,7 @@ export const Route = createFileRoute("/products/$slug")({
         };
       }
     } catch {
-      // Fall through to static product fallback if Supabase fails
-    }
-
-    if (!product) {
-      const staticProd = findProduct(params.slug);
-      if (staticProd) {
-        product = {
-          ...staticProd,
-          sale_price: staticProd.salePrice,
-          ingredients: staticProd.ingredients || [],
-          images: staticProd.images || [],
-          variants: staticProd.variants || [],
-        };
-      }
+      // Supabase query failed
     }
 
     if (!product) {
