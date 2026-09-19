@@ -476,13 +476,13 @@ function Home() {
                 quote: "Your one stop shop for shopping in Ooty. Be it authentic ooty chocolates, fridge magnets, spices or medicinal n essential oils .. they have evething !! And what quality. 🌟 Must visit ! 👍",
               },
               {
-                name: "m.r.digital roy",
+                name: "Rohit Roy",
                 stars: 5,
                 time: "a year ago",
                 quote: "Premium quality chocolate . Quality of the chocolate is so good . Must try . Staffs are so friendly .I had my best experience in the shop",
               },
               {
-                name: "DS",
+                name: "Divya Sharma",
                 stars: 4,
                 time: "a year ago",
                 quote: "Nice chocolate shop located in the centre of the city. They have all kinds of homemade chocolates, jelly, large lollipops and many more things available. I would definitely recommend getting the chocolate covered cookies. These were superb.",
@@ -516,6 +516,17 @@ function Home() {
                 </div>
               </figure>
             ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <a
+              href="https://www.google.com/maps/place/Eternity/@11.4117425,76.7079431,17z/data=!3m1!4b1!4m6!3m5!1s0x3ba8bd3d37413427:0x8ca83f52da071d57!8m2!3d11.4117425!4d76.7079431!16s%2Fg%2F11qwsqsgh8!5m1!1e1?entry=ttu&g_ep=EgoyMDI2MDcwOC4wIKXMDSoASAFQAw%3D%3D"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-3 rounded-full bg-gradient-gold px-8 py-4 text-[oklch(0.22_0.035_50)] font-semibold shadow-gold hover:-translate-y-0.5 transition-all"
+            >
+              <Star className="h-5 w-5 fill-current" /> Write a Review
+            </a>
           </div>
         </div>
       </section>

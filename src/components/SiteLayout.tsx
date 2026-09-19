@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+  ChevronUp,
   Instagram,
   MapPin,
   MessageCircle,
@@ -408,7 +409,17 @@ function Footer() {
       </div>
       <div className="border-t border-[oklch(0.94_0.02_80/0.12)] py-6">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[oklch(0.94_0.02_80/0.5)]">
-          <p>© {new Date().getFullYear()} ETERNITY · Crafted with love in the Nilgiris.</p>
+          <p>
+            © {new Date().getFullYear()}{" "}
+            <a
+              href="https://www.isoform.in"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="hover:text-accent transition-colors"
+            >
+              ISOFORM. All rights reserved.
+            </a>
+          </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
             <Link to="/terms" className="hover:text-accent transition-colors">Terms & Conditions</Link>
             <Link to="/privacy" className="hover:text-accent transition-colors">Privacy Policy</Link>
@@ -418,6 +429,42 @@ function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+export function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisible = () => {
+      // Reveal button as soon as user scrolls past the header (~80px)
+      setVisible(window.scrollY > 80);
+    };
+    window.addEventListener("scroll", toggleVisible, { passive: true });
+    toggleVisible();
+    return () => window.removeEventListener("scroll", toggleVisible);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={scrollToTop}
+      aria-label="Scroll back to top"
+      className={`fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full glass border border-border/80 text-foreground shadow-luxe backdrop-blur-md transition-all duration-300 hover:border-accent hover:text-accent hover:-translate-y-1 active:scale-95 cursor-pointer ${
+        visible
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+    >
+      <ChevronUp className="h-5 w-5 stroke-[2.2]" />
+    </button>
   );
 }
 

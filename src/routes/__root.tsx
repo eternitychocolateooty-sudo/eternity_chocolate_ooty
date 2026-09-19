@@ -8,7 +8,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { SiteLayout } from "@/components/SiteLayout";
+import { SiteLayout, ScrollToTopButton } from "@/components/SiteLayout";
 import { AuthProvider } from "@/components/AuthContext";
 import { CartProvider } from "@/components/CartContext";
 import { CookieNotice } from "@/components/CookieNotice";
@@ -159,16 +159,17 @@ function RootComponent() {
             />
           )}
           <div
-            className={`transition-all duration-700 transform ${
+            className={`transition-all duration-700 ${
               revealContent
-                ? "opacity-100 translate-y-0 blur-none"
-                : "opacity-0 translate-y-2 pointer-events-none blur-sm"
+                ? "opacity-100 blur-none"
+                : "opacity-0 translate-y-2 pointer-events-none blur-sm transform"
             }`}
             style={{ transitionTimingFunction: "var(--transition-smooth)" }}
           >
             <SiteLayout />
           </div>
           <CookieNotice />
+          <ScrollToTopButton />
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
