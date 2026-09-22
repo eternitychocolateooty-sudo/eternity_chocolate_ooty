@@ -70,24 +70,34 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 const cartStorageKey = "cocoa-cloud-cart";
 
-function getInitialCartItems(): CartItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = safeLocalStorage.getItem(cartStorageKey);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { user, loading: loadingAuth } = useAuth();
-  const [items, setItems] = useState<CartItem[]>(getInitialCartItems);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
-  // Fetch live products from database using React Query with safe cache and initialData
+  // Safely hydrate cart and product cache from localStorage post-hydration
+  useEffect(() => {
+    try {
+      const raw = safeLocalStorage.getItem(cartStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed);
+        }
+      }
+      const cached = safeLocalStorage.getItem("eternity_products_cache");
+      if (cached) {
+        const parsedProducts = JSON.parse(cached);
+        if (Array.isArray(parsedProducts) && parsedProducts.length > 0) {
+          queryClient.setQueryData(["products"], (old: any) => (old && old.length ? old : parsedProducts));
+        }
+      }
+    } catch {}
+  }, [queryClient]);
+
+  // Fetch live products from database using React Query with safe cache
   const { data: dbProducts = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
@@ -112,17 +122,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     staleTime: 1000 * 60 * 5,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    initialData: () => {
-      if (typeof window === "undefined") return undefined;
-      try {
-        const cached = safeLocalStorage.getItem("eternity_products_cache");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-      return undefined;
-    },
   });
 
   // Realtime listener for immediate product changes from Supabase

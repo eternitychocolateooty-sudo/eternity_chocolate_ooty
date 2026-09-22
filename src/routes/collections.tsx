@@ -80,23 +80,9 @@ function Collections() {
   const loaderData = Route.useLoaderData();
   const cart = useCart();
 
-  // Local storage fallback for instant, zero-delay rendering on slow network or client transition
-  const cachedLocal = useMemo(() => {
-    try {
-      const raw = safeLocalStorage.getItem("eternity_products_cache");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return [];
-  }, []);
-
-  const products = (cart.products && cart.products.length > 0)
-    ? cart.products
-    : (loaderData?.initialProducts && loaderData.initialProducts.length > 0)
-      ? loaderData.initialProducts
-      : cachedLocal;
+  const products = (loaderData?.initialProducts && loaderData.initialProducts.length > 0)
+    ? loaderData.initialProducts
+    : cart.products;
 
   const isLoading = cart.isLoadingProducts && products.length === 0;
 

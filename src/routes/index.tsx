@@ -74,10 +74,8 @@ export const Route = createFileRoute("/")({
 function Home() {
   const loaderData = Route.useLoaderData();
   const cart = useCart();
-  const products = (cart.products && cart.products.length > 0)
-    ? cart.products
-    : (loaderData?.featuredProducts || []);
-  const isLoading = cart.isLoadingProducts && products.length === 0;
+  const products = loaderData?.featuredProducts || [];
+  const isLoading = products.length === 0;
 
   return (
     <div>
