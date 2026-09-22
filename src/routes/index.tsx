@@ -158,7 +158,7 @@ function Home() {
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <picture>
-            <source media="(max-width: 640px)" srcSet={heroMobileImg} type="image/webp" />
+            <source media="(max-width: 640px)" srcSet={heroMobileImg} type="image/webp" width={640} height={360} />
             <img
               src={heroImg}
               alt="Handcrafted chocolate bars dusted with gold against the misty Ooty hills"

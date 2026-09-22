@@ -120,6 +120,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return mapped;
     },
     staleTime: 1000 * 60 * 5,
+    enabled: items.length > 0,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
