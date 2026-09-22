@@ -250,6 +250,13 @@ export default {
         newHeaders.set("X-Robots-Tag", "noindex, nofollow");
       }
 
+      // 1-year immutable caching for static assets, revalidate for HTML
+      if (url.pathname.startsWith("/assets/") || /\.(webp|png|jpe?g|gif|svg|ico|woff2?|ttf|css|js)$/i.test(url.pathname)) {
+        newHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+      } else if (isHtml) {
+        newHeaders.set("Cache-Control", "public, max-age=0, must-revalidate");
+      }
+
 
       const status = response.status;
       const isRedirect = status >= 300 && status < 400;

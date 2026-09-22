@@ -14,6 +14,7 @@ export default defineConfig({
   },
   vite: {
     build: {
+      target: "es2022",
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {

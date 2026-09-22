@@ -292,9 +292,10 @@ function Home() {
               src={storeImg}
               alt="ETERNITY The Exclusive Chocolate Shop storefront at Charring Cross, Ooty"
               loading="lazy"
+              decoding="async"
               className="rounded-3xl shadow-luxe w-full object-cover"
-              width={1280}
-              height={720}
+              width={960}
+              height={540}
             />
             <div className="absolute -bottom-6 -right-6 bg-foreground text-background rounded-2xl px-5 py-4 shadow-luxe hidden md:block">
               <p className="font-display text-3xl text-accent">28</p>
@@ -402,9 +403,10 @@ function Home() {
                 src={processImg}
                 alt="Chocolatier pouring ganache over hand-shaped truffles"
                 loading="lazy"
+                decoding="async"
                 className="rounded-3xl shadow-luxe w-full"
-                width={1280}
-                height={1280}
+                width={800}
+                height={800}
               />
             </div>
           </div>
@@ -445,6 +447,8 @@ function Home() {
                   alt={img.alt}
                   loading="lazy"
                   decoding="async"
+                  width={640}
+                  height={480}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </Link>
