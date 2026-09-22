@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
+import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ChevronUp,
@@ -433,8 +433,8 @@ export function ScrollToTopButton() {
 
   useEffect(() => {
     const toggleVisible = () => {
-      // Reveal button as soon as user scrolls past the header (~80px)
-      setVisible(window.scrollY > 80);
+      // Reveal button only after user has scrolled down past initial viewports (~400px)
+      setVisible(window.scrollY > 400);
     };
     window.addEventListener("scroll", toggleVisible, { passive: true });
     toggleVisible();
@@ -453,10 +453,11 @@ export function ScrollToTopButton() {
       type="button"
       onClick={scrollToTop}
       aria-label="Scroll back to top"
-      className={`fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full glass border border-border/80 text-foreground shadow-luxe backdrop-blur-md transition-all duration-300 hover:border-accent hover:text-accent hover:-translate-y-1 active:scale-95 cursor-pointer ${visible
+      className={`fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full glass border border-border/80 text-foreground shadow-luxe backdrop-blur-md transition-all duration-300 hover:border-accent hover:text-accent hover:-translate-y-1 active:scale-95 cursor-pointer ${
+        visible
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-4 pointer-events-none"
-        }`}
+      }`}
     >
       <ChevronUp className="h-5 w-5 stroke-[2.2]" />
     </button>
@@ -464,14 +465,6 @@ export function ScrollToTopButton() {
 }
 
 export function SiteLayout() {
-  const router = useRouter();
-  // scroll to top on route change
-  useEffect(() => {
-    return router.subscribe("onResolved", () => {
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    });
-  }, [router]);
-
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <FloatingNav />

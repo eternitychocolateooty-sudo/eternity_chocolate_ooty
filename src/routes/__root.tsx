@@ -7,6 +7,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  ScrollRestoration,
 } from "@tanstack/react-router";
 import { SiteLayout, ScrollToTopButton } from "@/components/SiteLayout";
 import { AuthProvider } from "@/components/AuthContext";
@@ -133,6 +134,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <ScrollRestoration />
         <Scripts />
       </body>
     </html>

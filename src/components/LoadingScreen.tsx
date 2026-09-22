@@ -29,10 +29,6 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       return;
     }
 
-    // Prevent scrolling while the loading screen is active
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
     // Preload header hero image in background while loading screen is active
     const preloadHero = new Image();
     preloadHero.src = heroImg;
@@ -52,24 +48,14 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
 
     const fadeOutTimeout = setTimeout(() => {
       setFadeState("fade-out");
-      // Unlock overflow as soon as fade begins so browser can layout and compute viewport intersections
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
       if (onRevealRef.current) {
         onRevealRef.current();
       }
     }, 420);
 
     const completeTimeout = setTimeout(() => {
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
       safeSessionStorage.setItem("eternity_intro_seen", "true");
       onCompleteRef.current();
-      // Dispatch scroll & resize events so native lazy loading triggers immediately without waiting for user action
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("scroll"));
-        window.dispatchEvent(new Event("resize"));
-      }
     }, 600);
 
     return () => {
@@ -78,18 +64,10 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       clearTimeout(holdTimeout);
       clearTimeout(fadeOutTimeout);
       clearTimeout(completeTimeout);
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("scroll"));
-        window.dispatchEvent(new Event("resize"));
-      }
     };
   }, []);
 
   const handleSkip = () => {
-    document.body.style.overflow = "";
-    document.documentElement.style.overflow = "";
     safeSessionStorage.setItem("eternity_intro_seen", "true");
     if (onRevealRef.current) onRevealRef.current();
     onCompleteRef.current();
@@ -105,7 +83,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       role="button"
       tabIndex={0}
       aria-label="Skip intro animation"
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#150B08] select-none cursor-pointer transition-opacity duration-[350ms] ease-in-out ${
+      className={`fixed inset-0 z-[100] touch-none overscroll-none flex flex-col items-center justify-center bg-[#150B08] select-none cursor-pointer transition-opacity duration-[350ms] ease-in-out ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
