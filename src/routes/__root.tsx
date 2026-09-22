@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -148,14 +148,17 @@ function RootComponent() {
   });
   const [revealContent, setRevealContent] = useState(() => !showLoader);
 
+  const handleReveal = useCallback(() => setRevealContent(true), []);
+  const handleComplete = useCallback(() => setShowLoader(false), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
           {showLoader && (
             <LoadingScreen
-              onReveal={() => setRevealContent(true)}
-              onComplete={() => setShowLoader(false)}
+              onReveal={handleReveal}
+              onComplete={handleComplete}
             />
           )}
           <div

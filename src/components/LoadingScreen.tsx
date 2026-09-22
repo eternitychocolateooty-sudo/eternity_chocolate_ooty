@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import logoImg from "@/assets/logo.png";
 import heroImg from "@/assets/hero-chocolate.webp";
 
@@ -9,6 +9,10 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
   const [fadeState, setFadeState] = useState<"hidden" | "fade-in" | "tracing" | "hold" | "fade-out">("hidden");
+  const onRevealRef = useRef(onReveal);
+  const onCompleteRef = useRef(onComplete);
+  onRevealRef.current = onReveal;
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     // Check if running inside Google Lighthouse, PageSpeed Insights, Googlebot, or automated crawlers
@@ -23,8 +27,8 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
           window.sessionStorage?.setItem("eternity_intro_seen", "true");
         } catch {}
       }
-      if (onReveal) onReveal();
-      onComplete();
+      if (onRevealRef.current) onRevealRef.current();
+      onCompleteRef.current();
       return;
     }
 
@@ -54,8 +58,8 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       // Unlock overflow as soon as fade begins so browser can layout and compute viewport intersections
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      if (onReveal) {
-        onReveal();
+      if (onRevealRef.current) {
+        onRevealRef.current();
       }
     }, 750);
 
@@ -67,7 +71,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
           window.sessionStorage?.setItem("eternity_intro_seen", "true");
         } catch {}
       }
-      onComplete();
+      onCompleteRef.current();
       // Dispatch scroll & resize events so native lazy loading triggers immediately without waiting for user action
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("scroll"));
@@ -88,7 +92,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
         window.dispatchEvent(new Event("resize"));
       }
     };
-  }, [onReveal, onComplete]);
+  }, []);
 
   const isVisible = fadeState !== "fade-out";
   const logoOpacity = fadeState !== "hidden" ? 1 : 0;

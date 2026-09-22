@@ -6,10 +6,71 @@ import { categories, formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
+function CollectionsPending() {
+  return (
+    <div className="pb-24">
+      <section className="container mx-auto px-6 py-16 md:py-24">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Online Shop</p>
+          <h1 className="font-display text-5xl md:text-7xl text-balance">
+            Choose your chocolate, wrapped in Ooty mist.
+          </h1>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse flex flex-col bg-card rounded-3xl h-[420px] overflow-hidden shadow-soft">
+              <div className="bg-secondary aspect-[4/5] w-full" />
+              <div className="p-6 flex-1 flex flex-col gap-3">
+                <div className="h-6 bg-secondary rounded w-2/3" />
+                <div className="h-4 bg-secondary rounded w-full" />
+                <div className="mt-auto flex items-center justify-between">
+                  <div className="h-6 bg-secondary rounded w-1/4" />
+                  <div className="h-10 w-20 bg-secondary rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/collections")({
-  staleTime: 0,
-  loader: async () => {
+  staleTime: 1000 * 60 * 5,
+  loader: async ({ context }) => {
     try {
+      // 1. If React Query already has products cached, return immediately in 0ms!
+      const cached = context?.queryClient?.getQueryData<any[]>(["products"]);
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        return { initialProducts: cached };
+      }
+
+      // 2. Fetch using queryClient so results are shared globally
+      if (context?.queryClient) {
+        const data = await context.queryClient.ensureQueryData({
+          queryKey: ["products"],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from("products")
+              .select("*")
+              .order("popularity", { ascending: false });
+            if (error) throw error;
+            return (data || []).map((p: any) => ({
+              ...p,
+              sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
+              price: Number(p.price),
+              rating: Number(p.rating),
+            }));
+          },
+          staleTime: 1000 * 60 * 5,
+        });
+        return { initialProducts: (data as any[]) || [] };
+      }
+
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -30,6 +91,7 @@ export const Route = createFileRoute("/collections")({
     }
     return { initialProducts: [] };
   },
+  pendingComponent: CollectionsPending,
   head: () => ({
     meta: [
       { title: "Shop Handcrafted Chocolates & Sweets — ETERNITY Ooty" },
