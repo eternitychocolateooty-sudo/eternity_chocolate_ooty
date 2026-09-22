@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -141,17 +141,21 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [showLoader, setShowLoader] = useState(() => {
-    if (typeof window === "undefined") return false;
+  const [showLoader, setShowLoader] = useState(false);
+  const [revealContent, setRevealContent] = useState(true);
+
+  useEffect(() => {
     try {
       const isHome = window.location.pathname === "/" || window.location.pathname === "";
       const hasSeenIntro = safeSessionStorage.getItem("eternity_intro_seen") === "true";
-      return isHome && !hasSeenIntro;
+      if (isHome && !hasSeenIntro) {
+        setShowLoader(true);
+        setRevealContent(false);
+      }
     } catch {
-      return false;
+      // Safe fallback if storage unavailable
     }
-  });
-  const [revealContent, setRevealContent] = useState(() => !showLoader);
+  }, []);
 
   const handleReveal = useCallback(() => setRevealContent(true), []);
   const handleComplete = useCallback(() => setShowLoader(false), []);

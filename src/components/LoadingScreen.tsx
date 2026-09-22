@@ -44,11 +44,11 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
 
     const traceTimeout = setTimeout(() => {
       setFadeState("tracing");
-    }, 150);
+    }, 100);
 
     const holdTimeout = setTimeout(() => {
       setFadeState("hold");
-    }, 600);
+    }, 280);
 
     const fadeOutTimeout = setTimeout(() => {
       setFadeState("fade-out");
@@ -58,7 +58,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
       if (onRevealRef.current) {
         onRevealRef.current();
       }
-    }, 750);
+    }, 420);
 
     const completeTimeout = setTimeout(() => {
       document.body.style.overflow = "";
@@ -70,7 +70,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
         window.dispatchEvent(new Event("scroll"));
         window.dispatchEvent(new Event("resize"));
       }
-    }, 1050);
+    }, 600);
 
     return () => {
       clearTimeout(fadeInTimeout);
@@ -87,13 +87,25 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
     };
   }, []);
 
+  const handleSkip = () => {
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    safeSessionStorage.setItem("eternity_intro_seen", "true");
+    if (onRevealRef.current) onRevealRef.current();
+    onCompleteRef.current();
+  };
+
   const isVisible = fadeState !== "fade-out";
   const logoOpacity = fadeState !== "hidden" ? 1 : 0;
   const isTracing = fadeState === "tracing";
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#150B08] select-none transition-opacity duration-[600ms] ease-in-out ${
+      onClick={handleSkip}
+      role="button"
+      tabIndex={0}
+      aria-label="Skip intro animation"
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#150B08] select-none cursor-pointer transition-opacity duration-[350ms] ease-in-out ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >

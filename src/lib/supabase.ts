@@ -1,24 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 
+const DEFAULT_SUPABASE_URL = "https://laogqehacxfntoldwhln.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxhb2dxZWhhY3hmbnRvbGR3aGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NDM2MDAsImV4cCI6MjA5ODExOTYwMH0.LpE_oYvEXKWlHUPXH1RrJxIMts_ZcWkxjg-fObrbmus";
+
 // Vite and SSR-compatible environment variable resolution
 const supabaseUrl = 
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
-  "";
+  (globalThis as any).__CLOUDFLARE_ENV__?.VITE_SUPABASE_URL ||
+  DEFAULT_SUPABASE_URL;
 
 const supabaseAnonKey = 
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  "";
-
-const supabaseServiceRoleKey = 
-  (globalThis as any).__CLOUDFLARE_ENV__?.SUPABASE_SERVICE_ROLE_KEY ||
-  (typeof process !== "undefined" && process["env"]?.["SUPABASE_SERVICE_ROLE_KEY"]) || 
-  "";
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Warning: Supabase credentials are missing. Please configure your .env file.");
-}
+  (globalThis as any).__CLOUDFLARE_ENV__?.VITE_SUPABASE_ANON_KEY ||
+  DEFAULT_SUPABASE_ANON_KEY;
 
 // Public client for user-authenticated operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

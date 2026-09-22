@@ -6,6 +6,7 @@ import { useCart, parseVariant } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 // 301 Redirect map for legacy AI-generated dummy URLs to prevent 404 indexing issues
 const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
@@ -18,8 +19,8 @@ const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/products/$slug")({
-  staleTime: 0,
-  loader: async ({ params }) => {
+  staleTime: 1000 * 60 * 5,
+  loader: async ({ params, context }) => {
     // Check if this is an old AI dummy product URL previously indexed by search engines
     const redirectUrl = LEGACY_AI_SLUG_REDIRECTS[params.slug];
     if (redirectUrl) {
@@ -29,14 +30,45 @@ export const Route = createFileRoute("/products/$slug")({
       });
     }
 
+    // 1. Instant 0ms cache check from React Query
+    const cachedProducts = (context as any)?.queryClient?.getQueryData<any[]>(["products"]);
+    if (cachedProducts && Array.isArray(cachedProducts)) {
+      const match = cachedProducts.find((p: any) => p.slug === params.slug);
+      if (match) {
+        return { product: match };
+      }
+    }
+
+    // 2. Instant client-side localStorage fallback
+    if (typeof window !== "undefined") {
+      try {
+        const stored = safeLocalStorage.getItem("eternity_cached_products");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const match = parsed.find((p: any) => p.slug === params.slug);
+            if (match) {
+              if ((context as any)?.queryClient) {
+                (context as any).queryClient.setQueryData(["products"], parsed);
+              }
+              return { product: match };
+            }
+          }
+        }
+      } catch {
+        // Continue to network
+      }
+    }
+
     let product: any = null;
 
+    // 3. Direct Supabase query
     try {
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", params.slug)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         product = {
@@ -45,9 +77,18 @@ export const Route = createFileRoute("/products/$slug")({
           price: Number(data.price),
           rating: Number(data.rating),
         };
+
+        // Cache in queryClient for instant subsequent hits
+        if ((context as any)?.queryClient) {
+          (context as any).queryClient.setQueryData<any[]>(["products"], (old) => {
+            if (!old || !old.length) return [product];
+            const exists = old.some((p: any) => p.id === product.id);
+            return exists ? old.map((p: any) => (p.id === product.id ? product : p)) : [...old, product];
+          });
+        }
       }
-    } catch {
-      // Supabase query failed
+    } catch (e) {
+      console.warn("Product loader Supabase fetch failed:", e);
     }
 
     if (!product) {

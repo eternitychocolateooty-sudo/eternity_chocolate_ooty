@@ -279,7 +279,7 @@ export default {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' data: https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://*.zaakpay.com https://*.mobikwik.com",
           "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
+          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co wss://laogqehacxfntoldwhln.supabase.co wss://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
           "frame-src 'self' https://maps.google.com https://*.google.com https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
           "object-src 'none'",
           "base-uri 'self'",

@@ -312,7 +312,13 @@ function AccountPage() {
                           </div>
                           <div>
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Date</p>
-                            <p className="text-sm text-foreground font-medium mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
+                            <p className="text-sm text-foreground font-medium mt-1">
+                              {new Date(order.created_at).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </p>
                           </div>
                           <div>
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
