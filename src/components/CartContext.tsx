@@ -2,6 +2,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "./AuthContext";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 export interface Product {
   id: string;
@@ -72,7 +73,7 @@ const cartStorageKey = "cocoa-cloud-cart";
 function getInitialCartItems(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(cartStorageKey);
+    const raw = safeLocalStorage.getItem(cartStorageKey);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -86,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
-  // Fetch live products from database using React Query with zero staletime for real-time accuracy
+  // Fetch live products from database using React Query with safe cache and initialData
   const { data: dbProducts = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
@@ -95,28 +96,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select("*")
         .order("popularity", { ascending: false });
       if (error) throw error;
-      return (data || []).map((p: any) => ({
+      const mapped = (data || []).map((p: any) => ({
         ...p,
         sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
         price: Number(p.price),
         rating: Number(p.rating),
       })) as Product[];
+
+      try {
+        safeLocalStorage.setItem("eternity_products_cache", JSON.stringify(mapped));
+      } catch {}
+
+      return mapped;
     },
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    initialData: () => {
+      if (typeof window === "undefined") return undefined;
+      try {
+        const cached = safeLocalStorage.getItem("eternity_products_cache");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+      return undefined;
+    },
   });
 
-  // Realtime listener for immediate product changes from Supabase + cleanup of stale legacy cache
+  // Realtime listener for immediate product changes from Supabase
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem("eternity_products_cache");
-      } catch {
-        // ignore
-      }
-    }
-
     const channel = supabase
       .channel("public:products_live_feed")
       .on(
@@ -155,7 +165,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }));
 
           // 2. Fetch local storage guest items to merge
-          const local = window.localStorage.getItem(cartStorageKey);
+          const local = safeLocalStorage.getItem(cartStorageKey);
           const localItems: CartItem[] = local ? JSON.parse(local) : [];
 
           if (localItems.length > 0) {
@@ -203,7 +213,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }
 
             // Clear guest local cart
-            window.localStorage.removeItem(cartStorageKey);
+            safeLocalStorage.removeItem(cartStorageKey);
             setItems(mergedList);
           } else {
             setItems(dbItems);
@@ -215,9 +225,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // Guest user: Load local cart items
-        const stored = window.localStorage.getItem(cartStorageKey);
+        const stored = safeLocalStorage.getItem(cartStorageKey);
         if (stored) {
-          setItems(JSON.parse(stored) as CartItem[]);
+          try {
+            setItems(JSON.parse(stored) as CartItem[]);
+          } catch {
+            setItems([]);
+          }
         } else {
           setItems([]);
         }
@@ -231,7 +245,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Persist guest cart locally
   useEffect(() => {
     if (!user && hasSynced === false) {
-      window.localStorage.setItem(cartStorageKey, JSON.stringify(items));
+      safeLocalStorage.setItem(cartStorageKey, JSON.stringify(items));
     }
   }, [items, user, hasSynced]);
 
@@ -292,13 +306,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...list, product];
     });
 
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(cartStorageKey, JSON.stringify(updatedItems));
-      } catch (err) {
-        console.warn("Could not save to localStorage:", err);
-      }
-    }
+    safeLocalStorage.setItem(cartStorageKey, JSON.stringify(updatedItems));
 
     if (user) {
       try {
@@ -377,7 +385,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = async () => {
     setItems([]);
-    window.localStorage.removeItem(cartStorageKey);
+    safeLocalStorage.removeItem(cartStorageKey);
 
     if (user) {
       try {

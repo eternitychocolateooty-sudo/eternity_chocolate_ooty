@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 const STORAGE_KEY = "eternity-cookie-notice-dismissed";
 
@@ -11,7 +12,7 @@ export function CookieNotice() {
 
   useEffect(() => {
     setMounted(true);
-    const dismissed = localStorage.getItem(STORAGE_KEY);
+    const dismissed = safeLocalStorage.getItem(STORAGE_KEY);
     if (!dismissed) {
       // Delay showing the notice slightly for a better Entry transition
       const timer = setTimeout(() => {
@@ -23,7 +24,7 @@ export function CookieNotice() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem(STORAGE_KEY, "true");
+    safeLocalStorage.setItem(STORAGE_KEY, "true");
   };
 
   if (!mounted || !isVisible) {

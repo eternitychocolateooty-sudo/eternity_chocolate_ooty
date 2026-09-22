@@ -262,15 +262,24 @@ export default {
         const nonce = btoa(String.fromCharCode(...bytes)).replace(/[^a-zA-Z0-9]/g, "");
 
         const originalBody = await response.text();
-        const modifiedBody = originalBody.replace(/<script\b(?![^>]*type\s*=\s*["']application\/(ld\+)?json["'])/gi, `<script nonce="${nonce}"`);
+        let modifiedBody = originalBody.replace(
+          /<script\b(?![^>]*type\s*=\s*["']application\/(ld\+)?json["'])/gi,
+          `<script nonce="${nonce}"`
+        );
+
+        // Inject meta csp-nonce so Vite dynamic chunk preloader finds the nonce on client side
+        modifiedBody = modifiedBody.replace(
+          /<head>/i,
+          `<head><meta property="csp-nonce" content="${nonce}" />`
+        );
 
         const csp = [
           "default-src 'self'",
-          `script-src 'self' 'nonce-${nonce}' https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://*.mobikwik.com`,
+          `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://*.mobikwik.com https://static.cloudflareinsights.com https://challenges.cloudflare.com`,
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' data: https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://*.zaakpay.com https://*.mobikwik.com",
           "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
+          "connect-src 'self' https://laogqehacxfntoldwhln.supabase.co https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
           "frame-src 'self' https://maps.google.com https://*.google.com https://sdk.cashfree.com https://*.cashfree.com https://*.zaakpay.com https://zaakstaging.zaakpay.com https://*.mobikwik.com",
           "object-src 'none'",
           "base-uri 'self'",

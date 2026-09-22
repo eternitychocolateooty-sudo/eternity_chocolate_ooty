@@ -13,6 +13,7 @@ import { AuthProvider } from "@/components/AuthContext";
 import { CartProvider } from "@/components/CartContext";
 import { CookieNotice } from "@/components/CookieNotice";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { safeSessionStorage } from "@/lib/safe-storage";
 
 import appCss from "../styles.css?url";
 import logoImg from "@/assets/logo.png";
@@ -142,9 +143,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [showLoader, setShowLoader] = useState(() => {
     if (typeof window === "undefined") return false;
-    const isHome = window.location.pathname === "/" || window.location.pathname === "";
-    const hasSeenIntro = window.sessionStorage?.getItem("eternity_intro_seen") === "true";
-    return isHome && !hasSeenIntro;
+    try {
+      const isHome = window.location.pathname === "/" || window.location.pathname === "";
+      const hasSeenIntro = safeSessionStorage.getItem("eternity_intro_seen") === "true";
+      return isHome && !hasSeenIntro;
+    } catch {
+      return false;
+    }
   });
   const [revealContent, setRevealContent] = useState(() => !showLoader);
 

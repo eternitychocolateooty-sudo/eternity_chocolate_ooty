@@ -5,93 +5,44 @@ import { useCart } from "@/components/CartContext";
 import { categories, formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-
-function CollectionsPending() {
-  return (
-    <div className="pb-24">
-      <section className="container mx-auto px-6 py-16 md:py-24">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-accent mb-4">Online Shop</p>
-          <h1 className="font-display text-5xl md:text-7xl text-balance">
-            Choose your chocolate, wrapped in Ooty mist.
-          </h1>
-        </div>
-      </section>
-
-      <section className="container mx-auto px-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="animate-pulse flex flex-col bg-card rounded-3xl h-[420px] overflow-hidden shadow-soft">
-              <div className="bg-secondary aspect-[4/5] w-full" />
-              <div className="p-6 flex-1 flex flex-col gap-3">
-                <div className="h-6 bg-secondary rounded w-2/3" />
-                <div className="h-4 bg-secondary rounded w-full" />
-                <div className="mt-auto flex items-center justify-between">
-                  <div className="h-6 bg-secondary rounded w-1/4" />
-                  <div className="h-10 w-20 bg-secondary rounded-full" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 export const Route = createFileRoute("/collections")({
   staleTime: 1000 * 60 * 5,
   loader: async ({ context }) => {
     try {
-      // 1. If React Query already has products cached, return immediately in 0ms!
+      // 1. Return immediately in 0ms if React Query already has products cached
       const cached = context?.queryClient?.getQueryData<any[]>(["products"]);
       if (cached && Array.isArray(cached) && cached.length > 0) {
         return { initialProducts: cached };
       }
 
-      // 2. Fetch using queryClient so results are shared globally
-      if (context?.queryClient) {
-        const data = await context.queryClient.ensureQueryData({
-          queryKey: ["products"],
-          queryFn: async () => {
-            const { data, error } = await supabase
-              .from("products")
-              .select("*")
-              .order("popularity", { ascending: false });
-            if (error) throw error;
-            return (data || []).map((p: any) => ({
-              ...p,
-              sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
-              price: Number(p.price),
-              rating: Number(p.rating),
-            }));
-          },
-          staleTime: 1000 * 60 * 5,
-        });
-        return { initialProducts: (data as any[]) || [] };
-      }
-
+      // 2. Direct Supabase query (works reliably on both SSR and client-side navigation)
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .order("popularity", { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return {
-          initialProducts: data.map((p: any) => ({
-            ...p,
-            sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
-            price: Number(p.price),
-            rating: Number(p.rating),
-          })),
-        };
+        const mapped = data.map((p: any) => ({
+          ...p,
+          sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
+          price: Number(p.price),
+          rating: Number(p.rating),
+        }));
+
+        // Prime the React Query cache so useCart() and the whole app gets it immediately
+        if (context?.queryClient) {
+          context.queryClient.setQueryData(["products"], mapped);
+        }
+
+        return { initialProducts: mapped };
       }
     } catch (e) {
       console.error("Collections loader fetch failed:", e);
     }
     return { initialProducts: [] };
   },
-  pendingComponent: CollectionsPending,
   head: () => ({
     meta: [
       { title: "Shop Handcrafted Chocolates & Sweets — ETERNITY Ooty" },
@@ -128,18 +79,38 @@ function getProductPrice(product: any) {
 function Collections() {
   const loaderData = Route.useLoaderData();
   const cart = useCart();
+
+  // Local storage fallback for instant, zero-delay rendering on slow network or client transition
+  const cachedLocal = useMemo(() => {
+    try {
+      const raw = safeLocalStorage.getItem("eternity_products_cache");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  }, []);
+
   const products = (cart.products && cart.products.length > 0)
     ? cart.products
-    : (loaderData?.initialProducts || []);
+    : (loaderData?.initialProducts && loaderData.initialProducts.length > 0)
+      ? loaderData.initialProducts
+      : cachedLocal;
+
   const isLoading = cart.isLoadingProducts && products.length === 0;
 
   useEffect(() => {
-    cart.refetchProducts();
+    if (products && products.length > 0) {
+      try {
+        safeLocalStorage.setItem("eternity_products_cache", JSON.stringify(products));
+      } catch {}
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("resize"));
     }
-  }, []);
+  }, [products]);
   const [active, setActive] = useState<(typeof categories)[number]>("All");
   const [query, setQuery] = useState("");
   const [price, setPrice] = useState(6000);

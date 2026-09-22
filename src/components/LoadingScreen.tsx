@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import logoImg from "@/assets/logo.png";
 import heroImg from "@/assets/hero-chocolate.webp";
+import { safeSessionStorage } from "@/lib/safe-storage";
 
 interface LoadingScreenProps {
   onReveal?: () => void;
@@ -22,11 +23,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
 
     // Fast-path for Lighthouse PageSpeed auditor & repeat visits: render immediately for sub-second FCP
     if (isBotOrLighthouse) {
-      if (typeof window !== "undefined") {
-        try {
-          window.sessionStorage?.setItem("eternity_intro_seen", "true");
-        } catch {}
-      }
+      safeSessionStorage.setItem("eternity_intro_seen", "true");
       if (onRevealRef.current) onRevealRef.current();
       onCompleteRef.current();
       return;
@@ -66,11 +63,7 @@ export function LoadingScreen({ onReveal, onComplete }: LoadingScreenProps) {
     const completeTimeout = setTimeout(() => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      if (typeof window !== "undefined") {
-        try {
-          window.sessionStorage?.setItem("eternity_intro_seen", "true");
-        } catch {}
-      }
+      safeSessionStorage.setItem("eternity_intro_seen", "true");
       onCompleteRef.current();
       // Dispatch scroll & resize events so native lazy loading triggers immediately without waiting for user action
       if (typeof window !== "undefined") {
