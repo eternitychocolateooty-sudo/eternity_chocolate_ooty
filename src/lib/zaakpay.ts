@@ -18,6 +18,8 @@ export interface ZaakpayTransactParams {
   buyerCountry?: string;
   productDescription?: string;
   txnDate?: string;
+  txnType?: string; // "1" for all payment modes (Cards, UPI, Netbanking)
+  zpPayOption?: string; // "1" for standard redirect
   [key: string]: string | undefined;
 }
 

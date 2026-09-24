@@ -654,6 +654,11 @@ function Checkout() {
                 Continue shopping
               </Link>
             </div>
+
+            <div className="flex items-center justify-center gap-2 pt-1 text-xs text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-accent" />
+              <span>Secured by Zaakpay · Credit &amp; Debit Cards, UPI, NetBanking accepted</span>
+            </div>
           </form>
         </div>
 

@@ -454,6 +454,8 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         returnUrl: returnUrl,
         txnDate: dateString,
         buyerEmail: (customerInfo.email || "").trim(),
+        txnType: "1", // 1 = All payment options (Credit/Debit Cards, UPI, NetBanking, Wallets)
+        zpPayOption: "1", // 1 = Standard redirect checkout flow
       };
 
       if (cleanPhone) rawParams.buyerPhoneNumber = cleanPhone;
