@@ -9,8 +9,13 @@ const customerInfoSchema = z.object({
   email: z.string().email("Invalid email format"),
   name: z.string().min(1, "Name is required").max(100),
   phone: z.string().min(10, "Phone number is too short").max(15, "Phone number is too long").regex(/^\+?[\d\s-]+$/, "Invalid phone format"),
-  userId: z.string().uuid("Invalid user ID format").optional(),
+  // Supabase access token of the signed-in user. The user id is derived from it server-side
+  // so a client cannot attach orders to someone else's account.
+  accessToken: z.string().max(4096).optional(),
 });
+
+// Gateway order references are generated server-side as ORD<digits><alnum> / ORD-<digits>-<alnum>
+const gatewayOrderIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Invalid order reference");
 
 const shippingAddressSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
@@ -28,18 +33,43 @@ const checkoutItemSchema = z.object({
 });
 
 const createCheckoutOrderSchema = z.object({
-  items: z.array(checkoutItemSchema).min(1, "Cart cannot be empty"),
+  items: z.array(checkoutItemSchema).min(1, "Cart cannot be empty").max(50, "Too many items in cart"),
   customerInfo: customerInfoSchema,
   shippingAddress: shippingAddressSchema,
 });
 
 const verifyCheckoutPaymentSchema = z.object({
   orderId: z.string().uuid("Invalid order ID format").optional(),
-  cashfreeOrderId: z.string().min(1).max(100).optional(),
+  cashfreeOrderId: gatewayOrderIdSchema.optional(),
   cashfreePaymentId: z.string().min(1).max(100).optional(),
   responseCode: z.string().optional(),
   isMock: z.boolean().optional(),
 });
+
+// Mock (no-gateway) payments are a local development convenience only. In a production build
+// this is statically false, so a client can never mark an order paid by claiming "mock".
+const MOCK_PAYMENTS_ENABLED = import.meta.env.DEV === true;
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function resolveUserIdFromToken(accessToken?: string): Promise<string | null> {
+  if (!accessToken) return null;
+  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+  if (error || !data?.user) return null;
+  return data.user.id;
+}
+
+function findVariant(variants: string[] | null | undefined, selectedVariant: string, basePrice: number) {
+  const match = (variants || []).find((v) => parseVariant(v, basePrice).name === selectedVariant);
+  return match ? parseVariant(match, basePrice) : null;
+}
 
 const submitFeedbackSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -125,7 +155,8 @@ export interface ShippingAddress {
 
 // SHARED HELPER FUNCTION TO COMPLETE AND PROMPT ORDER FULFILLMENT
 export async function completeOrder(orderId: string, cashfreePaymentId: string) {
-  // 1. Mark order as paid
+  // 1. Mark order as paid. The status filter makes this a compare-and-set, so concurrent or
+  // replayed confirmations cannot deplete stock or send emails twice.
   const { data: order, error: updateErr } = await supabaseAdmin
     .from("orders")
     .update({
@@ -133,11 +164,17 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
       cashfree_payment_id: cashfreePaymentId,
     })
     .eq("id", orderId)
+    .neq("payment_status", "paid")
     .select()
-    .single();
+    .maybeSingle();
 
-  if (updateErr || !order) {
-    throw new Error(`Failed to update order payment status: ${updateErr?.message || "Order not found"}`);
+  if (updateErr) {
+    console.error(`Failed to update order payment status for ${orderId}: ${updateErr.message}`);
+    throw new Error("Failed to update order payment status.");
+  }
+  if (!order) {
+    // Already paid (or unknown order): nothing more to do.
+    return;
   }
 
   // 2. Fetch order items to deplete stock levels
@@ -177,7 +214,7 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
   }
 
   const emailToUse = order.guest_email || "";
-  const nameToUse = order.guest_name || "Valued Customer";
+  const nameToUse = escapeHtml(order.guest_name || "Valued Customer");
   const phoneToUse = order.guest_phone || "";
 
   // A. Trigger order confirmation and alert emails via Resend HTTP API
@@ -186,21 +223,21 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
     const ownerEmail = getPlatformEnv("ADMIN_EMAIL") || "eternitychocolateooty@gmail.com";
 
     if (resendApiKey) {
-      
+
       // Build order items summary table
       const itemsSummaryHtml = orderItems
         ? orderItems
-            .map((item: any) => {
-              const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : "";
-              return `<tr>
+          .map((item: any) => {
+            const variantSuffix = item.selected_variant ? ` (${escapeHtml(item.selected_variant)})` : "";
+            return `<tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; color: #5D4037; text-align: left;">
-                  <strong>${item.products?.name || "Artisan Chocolate"}</strong>${variantSuffix}
+                  <strong>${escapeHtml(item.products?.name || "Artisan Chocolate")}</strong>${variantSuffix}
                 </td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${item.quantity}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${item.price}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${escapeHtml(item.quantity)}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${escapeHtml(item.price)}</td>
               </tr>`;
-            })
-            .join("")
+          })
+          .join("")
         : "";
 
       // Parse shipping address
@@ -212,9 +249,9 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
         ? `<div style="background-color: #FAF6F0; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-top: 20px;">
             <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Delivery Address</h4>
             <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
-              <strong>${addr.firstName} ${addr.lastName}</strong><br/>
-              ${addr.address}<br/>
-              ${addr.city}, ${addr.state} - ${addr.pincode}
+              <strong>${escapeHtml(addr.firstName)} ${escapeHtml(addr.lastName)}</strong><br/>
+              ${escapeHtml(addr.address)}<br/>
+              ${escapeHtml(addr.city)}, ${escapeHtml(addr.state)} - ${escapeHtml(addr.pincode)}
             </p>
           </div>`
         : "";
@@ -302,8 +339,8 @@ export async function completeOrder(orderId: string, cashfreePaymentId: string) 
                   <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Customer Details</h4>
                   <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
                     <strong>Name:</strong> ${nameToUse}<br/>
-                    <strong>Email:</strong> ${emailToUse || "N/A"}<br/>
-                    <strong>Phone:</strong> ${order.guest_phone || "N/A"}<br/>
+                    <strong>Email:</strong> ${escapeHtml(emailToUse || "N/A")}<br/>
+                    <strong>Phone:</strong> ${escapeHtml(order.guest_phone || "N/A")}<br/>
                     <strong>Order ID:</strong> ${orderId}
                   </p>
                 </div>
@@ -355,6 +392,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     }
 
     const { items, customerInfo, shippingAddress } = validation.data;
+    const userId = await resolveUserIdFromToken(customerInfo.accessToken);
 
     // Fetch actual prices from Supabase
     const productIds = items.map((i) => i.productId);
@@ -364,14 +402,17 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       .in("id", productIds);
 
     if (fetchErr || !dbProducts) {
-      throw new Error(`Failed to retrieve product data: ${fetchErr?.message || "Unknown error"}`);
+      console.error("Failed to retrieve product data:", fetchErr?.message);
+      throw new Error("Could not load products for checkout. Please try again.");
     }
 
 
-    // Securely calculate checkout subtotal and total weight
+    // Securely calculate checkout subtotal and total weight. Prices and weights come only from
+    // the database; a variant the product does not offer is rejected rather than ignored.
     let subtotal = 0;
     let totalGrams = 0;
-    for (const item of items) {
+    const unitPrices = new Map<number, number>();
+    for (const [index, item] of items.entries()) {
       const prod = dbProducts.find((p) => p.id === item.productId);
       if (!prod) {
         throw new Error(`Product not found: ${item.productId}`);
@@ -380,26 +421,22 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         throw new Error(`Insufficient stock for product ${prod.name}. Available: ${prod.stock_quantity}`);
       }
       let price = prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price);
+      let itemGrams = parseWeightToGrams(prod.weight);
       if (item.selectedVariant) {
-        const matchingVariantStr = prod.variants?.find(
-          (v: string) => parseVariant(v, price).name === item.selectedVariant
-        );
-        if (matchingVariantStr) {
-          price = parseVariant(matchingVariantStr, price).price;
+        const variant = findVariant(prod.variants, item.selectedVariant, price);
+        if (!variant) {
+          throw new Error(`The selected option for ${prod.name} is no longer available. Please re-add it to your hamper.`);
         }
+        price = variant.price;
+        const variantGrams = parseWeightToGrams(variant.name);
+        if (variantGrams > 0) itemGrams = variantGrams;
       }
+      if (!Number.isFinite(price) || price < 0) {
+        throw new Error(`Invalid price configured for ${prod.name}.`);
+      }
+      unitPrices.set(index, price);
       subtotal += price * item.quantity;
-
-      // Parse weight for shipping fee
-      let itemWeightStr = prod.weight;
-      if (item.selectedVariant) {
-        const weightGrams = parseWeightToGrams(item.selectedVariant);
-        if (weightGrams > 0) {
-          totalGrams += weightGrams * item.quantity;
-          continue;
-        }
-      }
-      totalGrams += parseWeightToGrams(itemWeightStr) * item.quantity;
+      totalGrams += itemGrams * item.quantity;
     }
 
     const totalWeightKg = totalGrams / 1000;
@@ -412,7 +449,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const zaakpaySecretKey = (getPlatformEnv("ZAAKPAY_SECRET_KEY") || getPlatformEnv("ZAAKPAY_API_KEY") || "").trim();
 
     const isZaakpayGateway = gateway === "ZAAKPAY";
-    const orderRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const orderRandom = crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
     let cashfreeOrderId = isZaakpayGateway
       ? `ORD${Date.now()}${orderRandom}`
       : `ORD-${Date.now()}-${orderRandom}`;
@@ -478,7 +515,11 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       const cashfreeEnv = getPlatformEnv("VITE_CASHFREE_ENV") || "TEST";
 
       if (!appId || !secretKey || appId === "your-cashfree-app-id" || secretKey === "your-cashfree-secret-key") {
-        console.warn("Payment API credentials missing or placeholder. Initiating MOCK payment order.");
+        if (!MOCK_PAYMENTS_ENABLED) {
+          console.error("Cashfree credentials are missing; refusing to create an unpaid mock order in production.");
+          throw new Error("Payments are temporarily unavailable. Please try again later.");
+        }
+        console.warn("Payment API credentials missing or placeholder. Initiating MOCK payment order (development only).");
         paymentSessionId = `mock_session_${Math.random().toString(36).substring(2, 15)}`;
         isMock = true;
       } else {
@@ -501,7 +542,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
               order_amount: Number(total.toFixed(2)),
               order_currency: "INR",
               customer_details: {
-                customer_id: customerInfo.userId || `guest_${Date.now()}`,
+                customer_id: userId || `guest_${Date.now()}`,
                 customer_name: customerInfo.name,
                 customer_email: customerInfo.email,
                 customer_phone: customerInfo.phone,
@@ -520,7 +561,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
           paymentSessionId = resData.payment_session_id;
         } catch (err: any) {
           console.error("Cashfree order creation failed:", err);
-          throw new Error(`Payment initialization failed: ${err.message}`);
+          throw new Error("Payment initialization failed. Please try again.");
         }
       }
     }
@@ -529,7 +570,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
-        user_id: customerInfo.userId || null,
+        user_id: userId,
         guest_email: customerInfo.email || null,
         guest_name: customerInfo.name || null,
         guest_phone: customerInfo.phone || null,
@@ -546,40 +587,27 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       .single();
 
     if (orderErr || !order) {
-      const diag = {
+      // Log diagnostics server-side only; never return key details to the browser.
+      console.error("Failed to record order:", orderErr?.message, {
         hasServiceKey: !!getPlatformEnv("SUPABASE_SERVICE_ROLE_KEY"),
-        serviceKeyLength: getPlatformEnv("SUPABASE_SERVICE_ROLE_KEY")?.length || 0,
-        hasAnonKey: !!getPlatformEnv("VITE_SUPABASE_ANON_KEY"),
-        hasResendKey: !!getPlatformEnv("RESEND_API_KEY"),
-      };
-      throw new Error(`Failed to record order: ${orderErr?.message || "Unknown error"} (Diag: ${JSON.stringify(diag)})`);
+      });
+      throw new Error("Failed to record your order. Please try again.");
     }
 
 
-    // Write order items
-    const orderItemsToInsert = items.map((item) => {
-      const prod = dbProducts.find((p) => p.id === item.productId);
-      let price = prod ? (prod.sale_price !== null && prod.sale_price !== undefined ? Number(prod.sale_price) : Number(prod.price)) : 0;
-      if (prod && item.selectedVariant) {
-        const matchingVariantStr = prod.variants?.find(
-          (v: string) => v.startsWith(item.selectedVariant! + ":") || v === item.selectedVariant
-        );
-        if (matchingVariantStr) {
-          price = parseVariant(matchingVariantStr, price).price;
-        }
-      }
-      return {
-        order_id: order.id,
-        product_id: item.productId,
-        quantity: item.quantity,
-        price,
-        selected_variant: item.selectedVariant || null,
-      };
-    });
+    // Write order items (unit prices computed above from the database)
+    const orderItemsToInsert = items.map((item, index) => ({
+      order_id: order.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      price: unitPrices.get(index) ?? 0,
+      selected_variant: item.selectedVariant || null,
+    }));
 
     const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(orderItemsToInsert);
     if (itemsErr) {
-      throw new Error(`Failed to record order items: ${itemsErr.message}`);
+      console.error("Failed to record order items:", itemsErr.message);
+      throw new Error("Failed to record your order. Please try again.");
     }
 
     return {
@@ -606,6 +634,9 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
     const { orderId, cashfreeOrderId, cashfreePaymentId, isMock } = validation.data;
 
     if (isMock) {
+      if (!MOCK_PAYMENTS_ENABLED) {
+        throw new Error("Payment could not be verified.");
+      }
       if (!orderId) throw new Error("Mock verification requires local orderId reference.");
       await completeOrder(orderId, cashfreePaymentId || `pay_mock_${Math.random().toString(36).substring(2, 10)}`);
       return { success: true };
@@ -614,26 +645,24 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
     const gateway = (getPlatformEnv("VITE_PAYMENT_GATEWAY") || "ZAAKPAY").toUpperCase();
 
     if (gateway === "ZAAKPAY") {
+      // Zaakpay orders are only ever marked paid by the checksum-verified gateway callback
+      // (confirmZaakpayCallback, called from server.ts). This endpoint just reports status.
       const lookupId = orderId || cashfreeOrderId;
       if (!lookupId) throw new Error("Missing order identification for verification.");
 
-      let query = supabaseAdmin.from("orders").select("id, payment_status, cashfree_order_id");
+      let query = supabaseAdmin.from("orders").select("payment_status");
       if (orderId) {
         query = query.eq("id", orderId);
       } else {
-        query = query.eq("cashfree_order_id", cashfreeOrderId);
+        query = query.eq("cashfree_order_id", cashfreeOrderId!);
       }
 
       const { data: dbOrder, error: orderErr } = await query.maybeSingle();
       if (orderErr || !dbOrder) {
-        throw new Error(`Failed to resolve order matching ID: ${lookupId}`);
+        throw new Error("We could not find this order.");
       }
 
-      if (dbOrder.payment_status !== "paid") {
-        await completeOrder(dbOrder.id, `pay_zk_${dbOrder.cashfree_order_id || Date.now()}`);
-      }
-
-      return { success: true };
+      return { success: dbOrder.payment_status === "paid" };
     }
 
     const appId = getPlatformEnv("VITE_CASHFREE_APP_ID");
@@ -643,10 +672,13 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
     if (!appId || !secretKey) {
       throw new Error("Payment API key configuration is missing on the server.");
     }
+    if (!cashfreeOrderId) {
+      throw new Error("Missing order identification for verification.");
+    }
 
     try {
       const host = cashfreeEnv === "PROD" ? "api.cashfree.com" : "sandbox.cashfree.com";
-      
+
       // Fetch order status from Cashfree
       const response = await fetch(`https://${host}/pg/orders/${cashfreeOrderId}`, {
         method: "GET",
@@ -669,12 +701,18 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       // Find the corresponding database record
       const { data: dbOrder, error: orderErr } = await supabaseAdmin
         .from("orders")
-        .select("id, payment_status")
+        .select("id, payment_status, total")
         .eq("cashfree_order_id", cashfreeOrderId)
         .single();
 
       if (orderErr || !dbOrder) {
-        throw new Error(`Failed to resolve order matching Cashfree ID: ${cashfreeOrderId}`);
+        throw new Error("We could not find this order.");
+      }
+
+      // The amount actually paid must match what we charged for this order
+      if (Math.round(Number(resData.order_amount) * 100) !== Math.round(Number(dbOrder.total) * 100)) {
+        console.error(`Cashfree amount mismatch for ${cashfreeOrderId}`);
+        throw new Error("Payment amount could not be verified. Please contact support.");
       }
 
       // Check if it is not paid yet, then complete it
@@ -689,6 +727,48 @@ export const verifyCheckoutPayment = createServerFn({ method: "POST" })
       throw new Error(err.message);
     }
   });
+
+// ZAAKPAY RETURN CALLBACK (not a server function: called by server.ts for the gateway's POST to /checkout)
+// Marks an order paid only when the response checksum verifies against our secret key, the
+// gateway reports success, and the amount matches the order total.
+export async function confirmZaakpayCallback(
+  fields: Record<string, string>,
+): Promise<{ orderRef: string | null; paid: boolean; message?: string }> {
+  const orderRef = fields.orderId || "";
+  if (!gatewayOrderIdSchema.safeParse(orderRef).success) {
+    return { orderRef: null, paid: false, message: "Invalid payment response." };
+  }
+
+  const secretKey = (getPlatformEnv("ZAAKPAY_SECRET_KEY") || getPlatformEnv("ZAAKPAY_API_KEY") || "").trim();
+  if (!secretKey || !verifyZaakpayChecksum(fields, fields.checksum || "", secretKey)) {
+    console.error(`Zaakpay callback checksum verification failed for ${orderRef}`);
+    return { orderRef, paid: false, message: "Payment response could not be verified." };
+  }
+
+  if (fields.responseCode !== "100") {
+    return { orderRef, paid: false, message: fields.responseDescription || "Payment was not successful" };
+  }
+
+  const { data: dbOrder, error } = await supabaseAdmin
+    .from("orders")
+    .select("id, total, payment_status")
+    .eq("cashfree_order_id", orderRef)
+    .maybeSingle();
+  if (error || !dbOrder) {
+    console.error(`Zaakpay callback for unknown order ${orderRef}`);
+    return { orderRef, paid: false, message: "We could not find this order." };
+  }
+
+  if (fields.amount !== Math.round(Number(dbOrder.total) * 100).toString()) {
+    console.error(`Zaakpay amount mismatch for ${orderRef}`);
+    return { orderRef, paid: false, message: "Payment amount could not be verified. Please contact support." };
+  }
+
+  if (dbOrder.payment_status !== "paid") {
+    await completeOrder(dbOrder.id, fields.pgTransId ? `zk_${fields.pgTransId}` : `pay_zk_${orderRef}`);
+  }
+  return { orderRef, paid: true };
+}
 
 // 3. SUBMIT FEEDBACK
 export const submitFeedback = createServerFn({ method: "POST" })
@@ -709,7 +789,8 @@ export const submitFeedback = createServerFn({ method: "POST" })
       .single();
 
     if (insertErr || !fb) {
-      throw new Error(`Failed to save feedback: ${insertErr?.message || "Unknown error"}`);
+      console.error("Failed to save feedback:", insertErr?.message);
+      throw new Error("Failed to save feedback. Please try again.");
     }
 
 

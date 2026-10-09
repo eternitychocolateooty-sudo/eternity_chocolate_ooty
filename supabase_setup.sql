@@ -123,44 +123,42 @@ create table if not exists public.feedbacks (
 
 -- Check if user is admin (security definer bypasses RLS to prevent recursion)
 create or replace function public.is_admin(user_id uuid)
-returns boolean as $$
-begin
-  return exists (
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
     select 1 from public.profiles
     where id = user_id and role = 'admin'
   );
-end;
-$$ language plpgsql security definer;
+$$;
 
 -- Automatic handle_new_user trigger on auth.users insert
+-- New users are always customers: raw_user_meta_data is supplied by whoever signs up,
+-- so it must never grant a role. Promote admins manually in the SQL editor.
 create or replace function public.handle_new_user()
-returns trigger as $$
-declare
-  default_role public.user_role := 'customer';
-  meta_role text;
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
-  if new.raw_user_meta_data is not null then
-    meta_role := new.raw_user_meta_data->>'role';
-    if meta_role = 'admin' then
-      default_role := 'admin';
-    end if;
-  end if;
-
   insert into public.profiles (id, full_name, phone, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(new.raw_user_meta_data->>'phone', ''),
-    default_role
+    'customer'
   )
   on conflict (id) do update
   set
     full_name = excluded.full_name,
-    phone = excluded.phone,
-    role = excluded.role;
+    phone = excluded.phone;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -178,6 +176,16 @@ alter table public.cart_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.feedbacks enable row level security;
+
+-- Orders, order items and feedback are written only by the server (service role).
+revoke all on public.profiles, public.addresses, public.cart_items,
+              public.orders, public.order_items, public.feedbacks from anon;
+revoke insert, update, delete on public.products from anon;
+revoke insert, delete on public.orders, public.order_items, public.feedbacks from authenticated;
+
+-- Users may edit only their own name/phone, never their role.
+revoke insert, update, delete on public.profiles from authenticated;
+grant update (full_name, phone, updated_at) on public.profiles to authenticated;
 
 -- =========================================================================
 -- 4. RLS POLICY DEFINITIONS
@@ -199,7 +207,8 @@ drop policy if exists "Allow admins to update products" on public.products;
 create policy "Allow admins to update products"
   on public.products for update
   to authenticated
-  using (public.is_admin(auth.uid()));
+  using (public.is_admin(auth.uid()))
+  with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Allow admins to delete products" on public.products;
 create policy "Allow admins to delete products"
@@ -224,21 +233,24 @@ drop policy if exists "Allow users to update their own profile" on public.profil
 create policy "Allow users to update their own profile"
   on public.profiles for update
   to authenticated
-  using (auth.uid() = id);
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 -- Addresses Policies
 drop policy if exists "Allow users to manage their own addresses" on public.addresses;
 create policy "Allow users to manage their own addresses"
   on public.addresses for all
   to authenticated
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Cart Items Policies
 drop policy if exists "Allow users to manage their own cart items" on public.cart_items;
 create policy "Allow users to manage their own cart items"
   on public.cart_items for all
   to authenticated
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Orders Policies
 drop policy if exists "Allow users to read their own orders" on public.orders;
@@ -253,15 +265,9 @@ create policy "Allow admins to read/write all orders"
   to authenticated
   using (public.is_admin(auth.uid()));
 
+-- No public insert/update policies: the server creates orders with the service role.
 drop policy if exists "Allow public/guests to create orders" on public.orders;
-create policy "Allow public/guests to create orders"
-  on public.orders for insert
-  with check (true);
-
 drop policy if exists "Allow public/guests to update their own pending orders" on public.orders;
-create policy "Allow public/guests to update their own pending orders"
-  on public.orders for update
-  using (payment_status = 'pending');
 
 -- Order Items Policies
 drop policy if exists "Allow users to read their own order items" on public.order_items;
@@ -283,15 +289,9 @@ create policy "Allow admins to manage all order items"
   using (public.is_admin(auth.uid()));
 
 drop policy if exists "Allow public/guests to create order items" on public.order_items;
-create policy "Allow public/guests to create order items"
-  on public.order_items for insert
-  with check (true);
 
 -- Feedbacks Policies
 drop policy if exists "Allow public to insert feedback" on public.feedbacks;
-create policy "Allow public to insert feedback"
-  on public.feedbacks for insert
-  with check (true);
 
 drop policy if exists "Allow admins to manage feedback" on public.feedbacks;
 create policy "Allow admins to manage feedback"
@@ -308,9 +308,12 @@ create policy "Allow admins to manage feedback"
 -- =========================================================================
 
 -- Create the 'product-images' bucket if it does not exist
-insert into storage.buckets (id, name, public)
-values ('product-images', 'product-images', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, allowed_mime_types, file_size_limit)
+values ('product-images', 'product-images', true,
+        array['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'], 10485760)
+on conflict (id) do update
+set allowed_mime_types = excluded.allowed_mime_types,
+    file_size_limit = excluded.file_size_limit;
 
 -- Storage policies for public reading of product images
 drop policy if exists "Allow public read access to product-images" on storage.objects;
@@ -328,7 +331,8 @@ create policy "Allow admins to insert files into product-images"
 drop policy if exists "Allow admins to update files in product-images" on storage.objects;
 create policy "Allow admins to update files in product-images"
   on storage.objects for update
-  using (bucket_id = 'product-images' and public.is_admin(auth.uid()));
+  using (bucket_id = 'product-images' and public.is_admin(auth.uid()))
+  with check (bucket_id = 'product-images' and public.is_admin(auth.uid()));
 
 -- Storage policies for admins to delete product images
 drop policy if exists "Allow admins to delete files from product-images" on storage.objects;

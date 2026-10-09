@@ -151,7 +151,7 @@ function Checkout() {
   const cart = useCart();
   const { user, profile } = useAuth();
   const { order_id: queryOrderId, error: queryError } = Route.useSearch();
-  
+
   const [placed, setPlaced] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -175,7 +175,7 @@ function Checkout() {
   // Check hydration and load default user details / verify payment
   useEffect(() => {
     setIsClient(true);
-    
+
     const verifyLivePayment = async () => {
       if (queryOrderId) {
         setIsProcessing(true);
@@ -230,7 +230,7 @@ function Checkout() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-    
+
     if (user) {
       if (user.email) setEmail(user.email);
       if (profile?.phone) setPhone(profile.phone);
@@ -248,7 +248,7 @@ function Checkout() {
           .eq("user_id", user.id)
           .eq("is_default", true)
           .maybeSingle();
-          
+
         if (data && !error) {
           setAddress(data.street_address);
           setCity(data.city);
@@ -321,6 +321,9 @@ function Checkout() {
     }
 
     try {
+      // The server derives the account from this token rather than trusting a client-sent user id
+      const { data: { session } } = await supabase.auth.getSession();
+
       // 1. Trigger order initialization in server function
       const orderRes = await createCheckoutOrder({
         data: {
@@ -333,7 +336,7 @@ function Checkout() {
             email,
             name: `${firstName} ${lastName}`,
             phone,
-            userId: user?.id
+            accessToken: session?.access_token
           },
           shippingAddress: {
             firstName,
@@ -388,7 +391,7 @@ function Checkout() {
       if (isMock) {
         console.warn("Processing checkout in simulation sandbox mode.");
         setCheckoutError(`Offline Sandbox Mode: Payment keys are missing on the live server. (gateway: ${gateway})`);
-        
+
         // Directly verify with a mock payment verification request
         const verifyRes = await verifyCheckoutPayment({
           data: {
@@ -475,20 +478,18 @@ function Checkout() {
           {paymentNotice && (
             <aside
               aria-live="polite"
-              className={`relative mb-8 overflow-hidden rounded-2xl border p-6 sm:p-7 shadow-soft transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
-                paymentNotice.type === "warning"
+              className={`relative mb-8 overflow-hidden rounded-2xl border p-6 sm:p-7 shadow-soft transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${paymentNotice.type === "warning"
                   ? "bg-card border-border/80 hover:border-accent/40"
                   : "bg-card border-destructive/40"
-              }`}
+                }`}
             >
               <div className="flex items-start gap-4 sm:gap-5">
                 {/* Visual Icon Badge */}
                 <div
-                  className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-2xl flex items-center justify-center border shadow-xs ${
-                    paymentNotice.type === "warning"
+                  className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-2xl flex items-center justify-center border shadow-xs ${paymentNotice.type === "warning"
                       ? "bg-secondary/60 border-border text-accent"
                       : "bg-destructive/10 border-destructive/30 text-destructive"
-                  }`}
+                    }`}
                 >
                   {paymentNotice.type === "warning" ? (
                     <RotateCcw className="h-5 w-5 stroke-[1.8]" />
@@ -509,11 +510,10 @@ function Checkout() {
 
                   {/* Reassurance Micro-signal */}
                   <div
-                    className={`mt-3.5 inline-flex items-center gap-2 text-xs font-medium ${
-                      paymentNotice.type === "warning"
+                    className={`mt-3.5 inline-flex items-center gap-2 text-xs font-medium ${paymentNotice.type === "warning"
                         ? "text-accent"
                         : "text-destructive"
-                    }`}
+                      }`}
                   >
                     <ShieldCheck className="h-4 w-4 shrink-0 stroke-[2]" />
                     <span>Hamper items preserved · No amount debited</span>
@@ -644,8 +644,8 @@ function Checkout() {
                 {isProcessing
                   ? "Processing..."
                   : cart.items.length === 0
-                  ? "Hamper is empty"
-                  : `Place order · ${formatMoney(cart.total)}`}
+                    ? "Hamper is empty"
+                    : `Place order · ${formatMoney(cart.total)}`}
               </button>
               <Link
                 to="/collections"

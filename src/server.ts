@@ -112,8 +112,8 @@ export default {
     const isApiOrPost = request.method !== "GET" && request.method !== "HEAD" || url.pathname.includes("/_server-fn");
     if (isApiOrPost) {
       const ip = request.headers.get("CF-Connecting-IP") ||
-                 request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
-                 "unknown";
+        request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+        "unknown";
       if (isRateLimited(ip)) {
         return new Response(
           JSON.stringify({ error: "Too many requests. Please try again later." }),
@@ -128,62 +128,30 @@ export default {
       }
     }
 
-    // Helper to check if an origin belongs to an allowed payment gateway
-    const isPaymentGatewayOrigin = (hostName: string): boolean => {
-      const allowedGateways = [
-        "zaakpay.com",
-        "zaakstaging.zaakpay.com",
-        "mobikwik.com",
-        "cashfree.com",
-        "sandbox.cashfree.com",
-        "api.cashfree.com",
-      ];
-      return allowedGateways.some(
-        (domain) => hostName === domain || hostName.endsWith("." + domain)
-      );
-    };
-
-    // 1.5 Handle Payment Gateway Postbacks to /checkout
+    // 1.5 Handle Payment Gateway (Zaakpay) return POSTs to /checkout.
+    // The browser is redirected here from the gateway, so the body is attacker-controllable:
+    // the order is only marked paid after the response checksum, status and amount verify.
     if (request.method === "POST" && url.pathname === "/checkout") {
+      const redirectWithError = (message: string) =>
+        Response.redirect(`${url.origin}/checkout?error=${encodeURIComponent(message)}`, 303);
       try {
         const formData = await request.clone().formData();
-        const orderId = formData.get("orderId")?.toString() ||
-                        formData.get("order_id")?.toString() ||
-                        url.searchParams.get("order_id") ||
-                        "";
-        const responseCode = formData.get("responseCode")?.toString() || "";
-        const responseDescription = formData.get("responseDescription")?.toString() || "";
-
-        console.log("Server: Payment gateway postback received on /checkout:", { orderId, responseCode, responseDescription });
-
-        if (orderId) {
-          const isSuccess = responseCode === "100" || responseDescription.toLowerCase().includes("success");
-          if (isSuccess) {
-            const { supabaseAdmin } = await import("./lib/supabase");
-            const { completeOrder } = await import("./lib/server-functions");
-
-            const { data: dbOrder } = await supabaseAdmin
-              .from("orders")
-              .select("id, payment_status")
-              .or(`id.eq.${orderId},cashfree_order_id.eq.${orderId}`)
-              .maybeSingle();
-
-            if (dbOrder && dbOrder.payment_status !== "paid") {
-              await completeOrder(dbOrder.id, `pay_zk_${orderId}`);
-            }
-
-            return Response.redirect(`${url.origin}/checkout?order_id=${encodeURIComponent(orderId)}`, 303);
-          } else {
-            const errMsg = encodeURIComponent(responseDescription || "Payment was not successful");
-            return Response.redirect(`${url.origin}/checkout?error=${errMsg}`, 303);
-          }
+        const fields: Record<string, string> = {};
+        for (const [key, value] of formData.entries()) {
+          if (typeof value === "string") fields[key] = value;
         }
+
+        const { confirmZaakpayCallback } = await import("./lib/server-functions");
+        const result = await confirmZaakpayCallback(fields);
+        console.log("Server: Zaakpay return processed:", { orderRef: result.orderRef, paid: result.paid, responseCode: fields.responseCode });
+
+        if (result.paid && result.orderRef) {
+          return Response.redirect(`${url.origin}/checkout?order_id=${encodeURIComponent(result.orderRef)}`, 303);
+        }
+        return redirectWithError(result.message || "Payment was not successful");
       } catch (err) {
         console.error("Server: Failed to process payment postback body:", err);
-        const orderId = url.searchParams.get("order_id");
-        if (orderId) {
-          return Response.redirect(`${url.origin}/checkout?order_id=${encodeURIComponent(orderId)}`, 303);
-        }
+        return redirectWithError("We could not confirm your payment. If money was debited, please contact us.");
       }
     }
 
@@ -196,7 +164,7 @@ export default {
       if (origin) {
         try {
           const originUrl = new URL(origin);
-          if (originUrl.host !== host && !isPaymentGatewayOrigin(originUrl.host)) {
+          if (originUrl.host !== host) {
             return new Response("CSRF Validation Failed: Origin mismatch", { status: 403 });
           }
         } catch {
@@ -205,7 +173,7 @@ export default {
       } else if (referer) {
         try {
           const refererUrl = new URL(referer);
-          if (refererUrl.host !== host && !isPaymentGatewayOrigin(refererUrl.host)) {
+          if (refererUrl.host !== host) {
             return new Response("CSRF Validation Failed: Referer mismatch", { status: 403 });
           }
         } catch {

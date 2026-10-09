@@ -39,6 +39,9 @@ export const Route = createFileRoute("/admin")({
   component: AdminConsole,
 });
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
 const compressImage = (file: File, maxW = 1200, maxH = 1200, quality = 0.82): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -270,21 +273,17 @@ function AdminConsole() {
       // 1. Upload new images and construct list of URLs
       for (const item of imagesList) {
         if (item.file) {
-          let fileToUpload: File | Blob = item.file;
-          let fileExt = "webp";
-          let contentType = "image/webp";
-
-          if (item.file.type.startsWith("image/")) {
-            try {
-              fileToUpload = await compressImage(item.file, 1200, 1200, 0.82);
-              fileExt = "webp";
-              contentType = "image/webp";
-            } catch (err) {
-              console.error("Image compression failed, using original file:", err);
-              fileExt = item.file.name.split(".").pop() || "webp";
-              contentType = item.file.type;
-            }
+          // Only raster images are accepted, and they are always re-encoded through a canvas so
+          // the stored file never carries the original bytes (e.g. SVG/HTML with embedded script).
+          if (!ALLOWED_IMAGE_TYPES.includes(item.file.type)) {
+            throw new Error(`"${item.file.name}" is not a supported image. Use JPEG, PNG, WebP, AVIF or GIF.`);
           }
+          if (item.file.size > MAX_IMAGE_BYTES) {
+            throw new Error(`"${item.file.name}" is larger than 10 MB.`);
+          }
+          const fileToUpload: Blob = await compressImage(item.file, 1200, 1200, 0.82);
+          const contentType = fileToUpload.type === "image/jpeg" ? "image/jpeg" : "image/webp";
+          const fileExt = contentType === "image/jpeg" ? "jpg" : "webp";
 
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
           const { error: uploadErr } = await supabase.storage

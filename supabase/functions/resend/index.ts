@@ -19,6 +19,15 @@ interface ShippingAddress {
   pincode: string
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -89,10 +98,10 @@ serve(async (req) => {
     const itemsSummaryHtml = orderItems
       ? orderItems
           .map((item: any) => {
-            const variantSuffix = item.selected_variant ? ` (${item.selected_variant})` : ""
+            const variantSuffix = item.selected_variant ? ` (${escapeHtml(item.selected_variant)})` : ""
             return `<tr>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; color: #5D4037; text-align: left;">
-                <strong>${item.products?.name || "Artisan Chocolate"}</strong>${variantSuffix}
+                <strong>${escapeHtml(item.products?.name || "Artisan Chocolate")}</strong>${variantSuffix}
               </td>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: center; color: #5D4037;">${item.quantity}</td>
               <td style="padding: 10px 8px; border-bottom: 1px solid #EFEBE9; text-align: right; color: #5D4037;">₹${item.price}</td>
@@ -110,15 +119,15 @@ serve(async (req) => {
       ? `<div style="background-color: #FAF6F0; border: 1px solid #EFEBE9; border-radius: 8px; padding: 15px; margin-top: 20px;">
           <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Delivery Address</h4>
           <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
-            <strong>${addr.firstName} ${addr.lastName}</strong><br/>
-            ${addr.address}<br/>
-            ${addr.city}, ${addr.state} - ${addr.pincode}
+            <strong>${escapeHtml(addr.firstName)} ${escapeHtml(addr.lastName)}</strong><br/>
+            ${escapeHtml(addr.address)}<br/>
+            ${escapeHtml(addr.city)}, ${escapeHtml(addr.state)} - ${escapeHtml(addr.pincode)}
           </p>
         </div>`
       : ""
 
     const customerEmail = record.guest_email || ""
-    const customerName = record.guest_name || "Valued Customer"
+    const customerName = escapeHtml(record.guest_name || "Valued Customer")
 
     const resendClient = new Resend(resendApiKey)
 
@@ -189,8 +198,8 @@ serve(async (req) => {
               <h4 style="color: #6D4C41; margin-top: 0; margin-bottom: 8px; font-family: serif; font-size: 1.1em;">Customer Details</h4>
               <p style="margin: 0; font-size: 0.95em; line-height: 1.5; color: #5D4037;">
                 <strong>Name:</strong> ${customerName}<br/>
-                <strong>Email:</strong> ${customerEmail || "N/A"}<br/>
-                <strong>Phone:</strong> ${record.guest_phone || "N/A"}<br/>
+                <strong>Email:</strong> ${escapeHtml(customerEmail || "N/A")}<br/>
+                <strong>Phone:</strong> ${escapeHtml(record.guest_phone || "N/A")}<br/>
                 <strong>Order ID:</strong> ${orderId}
               </p>
             </div>

@@ -20,10 +20,10 @@ export const Route = createFileRoute("/account")({
 
 function AccountPage() {
   const { user, profile, loading: authLoading, signOut, signInWithGoogle } = useAuth();
-  
+
   // Tab toggle for guest: "login" | "signup"
   const [activeAuthTab, setActiveAuthTab] = useState<"login" | "signup">("login");
-  
+
   // Dashboard active section: "orders" | "profile"
   const [activeSection, setActiveSection] = useState<"orders" | "profile">("orders");
 
@@ -122,8 +122,8 @@ function AccountPage() {
           {user ? `Welcome back, ${profile?.full_name || "Chocolate Lover"}.` : "Sign in, save addresses, and follow every chocolate box."}
         </h1>
         <p className="mt-5 max-w-2xl text-muted-foreground">
-          {user 
-            ? "Manage your saved addresses, track your deliveries, and check your wishlist in one calm panel." 
+          {user
+            ? "Manage your saved addresses, track your deliveries, and check your wishlist in one calm panel."
             : "Register your email to earn reward points, save custom gift instructions, and make checking out swift."}
         </p>
       </section>
@@ -136,21 +136,19 @@ function AccountPage() {
             <div className="mb-8 flex border-b border-border">
               <button
                 onClick={() => { setActiveAuthTab("login"); setFormError(""); setFormSuccess(""); }}
-                className={`flex-1 pb-4 text-center font-display text-xl transition-all ${
-                  activeAuthTab === "login"
+                className={`flex-1 pb-4 text-center font-display text-xl transition-all ${activeAuthTab === "login"
                     ? "border-b-2 border-accent text-foreground"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 Sign In
               </button>
               <button
                 onClick={() => { setActiveAuthTab("signup"); setFormError(""); setFormSuccess(""); }}
-                className={`flex-1 pb-4 text-center font-display text-xl transition-all ${
-                  activeAuthTab === "signup"
+                className={`flex-1 pb-4 text-center font-display text-xl transition-all ${activeAuthTab === "signup"
                     ? "border-b-2 border-accent text-foreground"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 Create Account
               </button>
@@ -253,11 +251,10 @@ function AccountPage() {
               <button
                 key={sec.id}
                 onClick={() => setActiveSection(sec.id as any)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm font-medium transition-all ${
-                  activeSection === sec.id
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm font-medium transition-all ${activeSection === sec.id
                     ? "bg-primary text-primary-foreground shadow-soft"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
+                  }`}
               >
                 <sec.Icon className="h-4 w-4" />
                 {sec.label}
@@ -287,7 +284,7 @@ function AccountPage() {
 
           {/* Section Panel */}
           <main className="rounded-3xl bg-card p-6 md:p-8 shadow-luxe border border-border/50 min-h-[50vh]">
-            
+
             {/* 1. ORDER HISTORY SECTION */}
             {activeSection === "orders" && (
               <div>
@@ -322,17 +319,15 @@ function AccountPage() {
                           </div>
                           <div>
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
-                            <span className={`inline-block rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-wider mt-1 ${
-                              order.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                            }`}>
+                            <span className={`inline-block rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-wider mt-1 ${order.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                              }`}>
                               {order.payment_status}
                             </span>
                           </div>
                           <div>
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Fulfillment</p>
-                            <span className={`inline-block rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-wider mt-1 ${
-                              order.fulfillment_status === "fulfilled" ? "bg-blue-100 text-blue-800" : "bg-neutral-100 text-neutral-800"
-                            }`}>
+                            <span className={`inline-block rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-wider mt-1 ${order.fulfillment_status === "fulfilled" ? "bg-blue-100 text-blue-800" : "bg-neutral-100 text-neutral-800"
+                              }`}>
                               {order.fulfillment_status}
                             </span>
                           </div>
@@ -367,10 +362,10 @@ function AccountPage() {
                   <div className="grid grid-cols-[100px_1fr] gap-2 items-center text-sm">
                     <span className="text-muted-foreground uppercase tracking-wider text-xs">Name</span>
                     <span className="font-semibold text-foreground">{profile?.full_name || "N/A"}</span>
-                    
+
                     <span className="text-muted-foreground uppercase tracking-wider text-xs">Email</span>
                     <span className="font-semibold text-foreground">{user.email}</span>
-                    
+
                     <span className="text-muted-foreground uppercase tracking-wider text-xs">Mobile</span>
                     <span className="font-semibold text-foreground">{profile?.phone || "N/A"}</span>
 

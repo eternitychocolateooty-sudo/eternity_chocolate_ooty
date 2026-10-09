@@ -146,8 +146,10 @@ export function verifyZaakpayChecksum(
 ): boolean {
   const cleanKey = (secretKey || "").trim();
   const all = buildZaakpayResponseChecksumString(params);
-  const calculated = crypto.createHmac("sha256", cleanKey).update(all).digest("hex");
-  return calculated.toLowerCase() === (receivedChecksum || "").trim().toLowerCase();
+  if (!cleanKey) return false;
+  const calculated = Buffer.from(crypto.createHmac("sha256", cleanKey).update(all).digest("hex"));
+  const received = Buffer.from((receivedChecksum || "").trim().toLowerCase());
+  return calculated.length === received.length && crypto.timingSafeEqual(calculated, received);
 }
 
 /**
