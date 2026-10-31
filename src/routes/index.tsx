@@ -22,10 +22,11 @@ import galleryImg1 from "@/assets/gallery-1.webp";
 import { useCart } from "@/components/CartContext";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { PRODUCTS_STALE_TIME } from "@/lib/products";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  staleTime: 1000 * 60 * 5,
+  staleTime: PRODUCTS_STALE_TIME,
   loader: async () => {
     try {
       const { data, error } = await supabase

@@ -1,47 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/components/CartContext";
 import { categories, formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
-import { safeLocalStorage } from "@/lib/safe-storage";
+import { PRODUCTS_STALE_TIME, productsQueryKey, productsQueryOptions } from "@/lib/products";
+import type { Product } from "@/components/CartContext";
 
 export const Route = createFileRoute("/collections")({
-  staleTime: 1000 * 60 * 5,
+  staleTime: PRODUCTS_STALE_TIME,
   loader: async ({ context }) => {
     try {
-      // 1. Return immediately in 0ms if React Query already has products cached
-      const cached = context?.queryClient?.getQueryData<any[]>(["products"]);
-      if (cached && Array.isArray(cached) && cached.length > 0) {
-        return { initialProducts: cached };
-      }
-
-      // 2. Direct Supabase query (works reliably on both SSR and client-side navigation)
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("popularity", { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        const mapped = data.map((p: any) => ({
-          ...p,
-          sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
-          price: Number(p.price),
-          rating: Number(p.rating),
-        }));
-
-        // Prime the React Query cache so useCart() and the whole app gets it immediately
-        if (context?.queryClient) {
-          context.queryClient.setQueryData(["products"], mapped);
-        }
-
-        return { initialProducts: mapped };
-      }
+      // Serves the cached list while it is fresh, otherwise re-fetches (SSR and client navigation)
+      return { initialProducts: await context.queryClient.fetchQuery(productsQueryOptions) };
     } catch (e) {
       console.error("Collections loader fetch failed:", e);
     }
-    return { initialProducts: [] };
+    return { initialProducts: context.queryClient.getQueryData<Product[]>(productsQueryKey) ?? [] };
   },
   head: () => ({
     meta: [
@@ -80,18 +56,13 @@ function Collections() {
   const loaderData = Route.useLoaderData();
   const cart = useCart();
 
-  const products = (loaderData?.initialProducts && loaderData.initialProducts.length > 0)
-    ? loaderData.initialProducts
-    : cart.products;
-
-  const isLoading = cart.isLoadingProducts && products.length === 0;
+  // Subscribe to the live list so a re-fetch updates an already open page
+  const { data: products = [], isLoading } = useQuery({
+    ...productsQueryOptions,
+    initialData: loaderData.initialProducts.length > 0 ? loaderData.initialProducts : undefined,
+  });
 
   useEffect(() => {
-    if (products && products.length > 0) {
-      try {
-        safeLocalStorage.setItem("eternity_products_cache", JSON.stringify(products));
-      } catch {}
-    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("resize"));

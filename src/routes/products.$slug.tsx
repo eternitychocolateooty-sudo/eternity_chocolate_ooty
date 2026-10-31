@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate, notFound, redirect } from "@tanstack/react-router";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCart, parseVariant } from "@/components/CartContext";
+import { useQuery } from "@tanstack/react-query";
+import { useCart, parseVariant, type Product } from "@/components/CartContext";
 import { formatMoney } from "@/data/shop";
 import { resolveProductImage, safeJsonStringify } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-import { safeLocalStorage } from "@/lib/safe-storage";
+import { PRODUCTS_STALE_TIME, productsQueryKey, productsQueryOptions } from "@/lib/products";
 
 // 301 Redirect map for legacy AI-generated dummy URLs to prevent 404 indexing issues
 const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
@@ -19,7 +19,7 @@ const LEGACY_AI_SLUG_REDIRECTS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/products/$slug")({
-  staleTime: 1000 * 60 * 5,
+  staleTime: PRODUCTS_STALE_TIME,
   loader: async ({ params, context }) => {
     // Check if this is an old AI dummy product URL previously indexed by search engines
     const redirectUrl = LEGACY_AI_SLUG_REDIRECTS[params.slug];
@@ -30,8 +30,8 @@ export const Route = createFileRoute("/products/$slug")({
       });
     }
 
-    // 1. Instant 0ms cache check from React Query
-    const cachedProducts = (context as any)?.queryClient?.getQueryData<any[]>(["products"]);
+    // 1. Instant 0ms cache check from React Query (the page re-checks it against the live list)
+    const cachedProducts = (context as any)?.queryClient?.getQueryData<any[]>(productsQueryKey);
     if (cachedProducts && Array.isArray(cachedProducts)) {
       const match = cachedProducts.find((p: any) => p.slug === params.slug);
       if (match) {
@@ -39,30 +39,9 @@ export const Route = createFileRoute("/products/$slug")({
       }
     }
 
-    // 2. Instant client-side localStorage fallback
-    if (typeof window !== "undefined") {
-      try {
-        const stored = safeLocalStorage.getItem("eternity_cached_products");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            const match = parsed.find((p: any) => p.slug === params.slug);
-            if (match) {
-              if ((context as any)?.queryClient) {
-                (context as any).queryClient.setQueryData(["products"], parsed);
-              }
-              return { product: match };
-            }
-          }
-        }
-      } catch {
-        // Continue to network
-      }
-    }
-
     let product: any = null;
 
-    // 3. Direct Supabase query
+    // 2. Direct Supabase query
     try {
       const { data, error } = await supabase
         .from("products")
@@ -77,15 +56,6 @@ export const Route = createFileRoute("/products/$slug")({
           price: Number(data.price),
           rating: Number(data.rating),
         };
-
-        // Cache in queryClient for instant subsequent hits
-        if ((context as any)?.queryClient) {
-          (context as any).queryClient.setQueryData<any[]>(["products"], (old) => {
-            if (!old || !old.length) return [product];
-            const exists = old.some((p: any) => p.id === product.id);
-            return exists ? old.map((p: any) => (p.id === product.id ? product : p)) : [...old, product];
-          });
-        }
       }
     } catch (e) {
       console.warn("Product loader Supabase fetch failed:", e);
@@ -126,23 +96,15 @@ export const Route = createFileRoute("/products/$slug")({
 });
 
 function ProductDetails() {
-  const { product } = Route.useLoaderData();
+  const { product: loadedProduct } = Route.useLoaderData();
+  // The live list keeps price and stock current and supplies the related products
+  const { data: allProducts = [] } = useQuery(productsQueryOptions);
+  const product: Product = allProducts.find((p) => p.id === loadedProduct.id) ?? loadedProduct;
   const cart = useCart();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
   const [isBuying, setIsBuying] = useState(false);
-
-  // Sync loaded product data into global query cache so collections and cart see any changed values immediately
-  useEffect(() => {
-    if (product) {
-      queryClient.setQueryData<any[]>(["products"], (old) => {
-        if (!old || !old.length) return old;
-        return old.map((p) => (p.id === product.id ? { ...p, ...product } : p));
-      });
-    }
-  }, [product, queryClient]);
 
   const handleBuyNow = async () => {
     if (isBuying || product.status === "sold-out") return;
@@ -159,12 +121,12 @@ function ProductDetails() {
   };
 
   const related = useMemo(() => {
-    if (!cart.products.length) return [];
-    return cart.products
+    if (!allProducts.length) return [];
+    return allProducts
       .filter((item) => item.id !== product.id && item.category === product.category)
-      .concat(cart.products.filter((item) => item.id !== product.id && item.category !== product.category))
+      .concat(allProducts.filter((item) => item.id !== product.id && item.category !== product.category))
       .slice(0, 3);
-  }, [product, cart.products]);
+  }, [product, allProducts]);
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
@@ -172,7 +134,7 @@ function ProductDetails() {
     setSelectedVariantIndex(0);
     setActiveImage(product.images[0]);
     setQuantity(1);
-  }, [product.id, product.images]);
+  }, [product.id, product.images[0]]);
 
   const baseActivePrice = product.sale_price !== undefined ? product.sale_price : product.price;
   const parsedVariants = useMemo(() => {

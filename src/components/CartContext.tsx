@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "./AuthContext";
 import { safeLocalStorage } from "@/lib/safe-storage";
+import { productsQueryKey, productsQueryOptions } from "@/lib/products";
 
 export interface Product {
   id: string;
@@ -22,6 +23,7 @@ export interface Product {
   popularity: number;
   status: "available" | "low-stock" | "sold-out";
   variants: string[];
+  created_at?: string;
 }
 
 export interface ParsedVariant {
@@ -77,7 +79,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hasSynced, setHasSynced] = useState(false);
   const [shippingState, setShippingState] = useState<string>("Tamil Nadu");
 
-  // Safely hydrate cart and product cache from localStorage post-hydration
+  // Safely hydrate cart from localStorage post-hydration
   useEffect(() => {
     try {
       const raw = safeLocalStorage.getItem(cartStorageKey);
@@ -87,42 +89,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setItems(parsed);
         }
       }
-      const cached = safeLocalStorage.getItem("eternity_products_cache");
-      if (cached) {
-        const parsedProducts = JSON.parse(cached);
-        if (Array.isArray(parsedProducts) && parsedProducts.length > 0) {
-          queryClient.setQueryData(["products"], (old: any) => (old && old.length ? old : parsedProducts));
-        }
-      }
+      // Clear the product list older versions saved here, it went stale on returning visitors
+      safeLocalStorage.removeItem("eternity_products_cache");
     } catch {}
-  }, [queryClient]);
+  }, []);
 
-  // Fetch live products from database using React Query with safe cache
-  const { data: dbProducts = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery<Product[]>({
-    queryKey: ["products"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("popularity", { ascending: false });
-      if (error) throw error;
-      const mapped = (data || []).map((p: any) => ({
-        ...p,
-        sale_price: p.sale_price !== null ? Number(p.sale_price) : undefined,
-        price: Number(p.price),
-        rating: Number(p.rating),
-      })) as Product[];
-
-      try {
-        safeLocalStorage.setItem("eternity_products_cache", JSON.stringify(mapped));
-      } catch {}
-
-      return mapped;
-    },
-    staleTime: 1000 * 60 * 5,
+  // Fetch live products from database using React Query
+  const { data: dbProducts = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
+    ...productsQueryOptions,
     enabled: items.length > 0,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
   });
 
   // Realtime listener for immediate product changes from Supabase
@@ -133,7 +108,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "products" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["products"] });
+          queryClient.invalidateQueries({ queryKey: productsQueryKey });
         }
       )
       .subscribe();
@@ -298,12 +273,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setItems(updatedItems);
 
-    queryClient.setQueryData<Product[]>(["products"], (old) => {
-      const list = old || [];
-      if (list.some((p) => p.id === product.id)) {
-        return list.map((p) => (p.id === product.id ? { ...p, ...product } : p));
+    queryClient.setQueryData<Product[]>(productsQueryKey, (old) => {
+      if (!old) return old;
+      if (old.some((p) => p.id === product.id)) {
+        return old.map((p) => (p.id === product.id ? { ...p, ...product } : p));
       }
-      return [...list, product];
+      return [...old, product];
     });
 
     safeLocalStorage.setItem(cartStorageKey, JSON.stringify(updatedItems));
